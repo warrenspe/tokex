@@ -11,4 +11,4 @@ class StringParser(object):
 
 
     def match(self, inputString):
-        pass
+        return grammar.match(inputString)

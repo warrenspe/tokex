@@ -43,7 +43,8 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
     _!..._          - Matches any token EXCEPT the one passed.  Example: _!from_
 
 
-    NOTE: to escape ', ", `, ^, $, _ within '...', "...", `...`, ^...^, $...^, _!..._ respectively, use a \. Example: _!one\_up_
+    NOTE: to escape ', ", `, ^, $, _ within '...', "...", `...`, ^...^, $...^, _!..._
+          respectively, use a \ - Example: _!one\_up_
 
 
     ###
@@ -56,8 +57,10 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
 
     (name: ...)     - Named Grammar. After parsing, each named grammar will equate to a dictionary, with all named
                       matches made within it being recorded as key: value pairs, name: matched-token.
-                      When used inside {   } brackets, groups the grammar it contains such that 
-                      match, else no match is made.
+                      To match a string, it must be able to successfully match all of the tokens it contains. If it
+                      cannot match a token, no match is made. Example: (test: 'a' 'b' 'c')
+                      Matches: "a b c"
+                      Does not match: "a b"
 
     ###
     # Flow
@@ -65,9 +68,15 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
 
     [[...]]         - Specifies zero or one matches of the grammar it wraps.
 
-    ((...))         - Specifies zero or more matches of the grammar it wraps.
-                      After parsing, each {} block will equate to a list, iterating over all named grammars it matched
-                      in the order they matched.
+    ((...))         - Specifies zero or more matches of the grammar it wraps.  Named grammars & named tokens wrapped by
+                      Zero Or More brakets will returned as a list of dictionaries.  Named token matches outside of a
+                      named grammar will be grouped into a list, while matches inside a named grammar will be grouped
+                      into a dictionary.
+                      Example: [[<a: 'a'> (b: <c: 'c'> <d: 'd'>)]]  <- 'a c d a c d'
+                      => {
+                             'a': ['a', 'a'],
+                             'b': [{'c': 'c', 'd': 'd'}, {'c': 'c', 'd': 'd'}]
+                         }
 
     {{...}}         - Specifies one grammar of the set.  Will attempt to match each grammar it contains with the string
                       until one matches in its entirety.

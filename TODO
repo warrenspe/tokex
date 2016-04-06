@@ -1,1 +1,2 @@
 preparsing, allowing ::=
+move logic from grammar.match -> _match to an if in grammar, so we dont have a bunch of extra function calls

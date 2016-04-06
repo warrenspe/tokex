@@ -3,7 +3,7 @@ File containing a Grammar object and grammar parsing function which are used to 
 """
 
 # Standard imports
-import re
+import re, collections
 
 ###
 # Custom exceptions
@@ -123,7 +123,7 @@ def constructGrammar(grammarString):
 
         # Singlular tokens
         elif token[0] in ("'", '"', '`', '^', '$', '_'):
-            grammarStack[-1].append(token)
+            grammarStack[-1].append(Token(token))
 
         else:
             raise GrammarParsingError("Unknown token: %s" % repr(token))
@@ -139,10 +139,19 @@ def constructGrammar(grammarString):
 ###
 
 class _SParseGrammar(object):
+
     def match(self, stringTokens, idx):
+        """ Wrapper function for _match; see _match for description of inputs & outputs. """
+
+        if idx >= len(stringTokens):
+            return False, None, None
+
+        return self._match(stringTokens, idx)
+
+    def _match(self, stringTokens, idx):
         """
         Function which accepts an iterable of tokens and a current index and determines whether or not this construct
-        matches the list at the current position.
+        matches the list at the current position. Should be overridden in subclasses.
 
         Inputs: stringTokens - An iterable of string tokens to determine if we match upon.
                 idx          - The start index within the stringTokens to begin processing at.
@@ -159,107 +168,34 @@ class _SParseGrammar(object):
 
 class Grammar(_SParseGrammar):
     """
-    Grammar class representing a user-defined grammar.
+    Grammar class representing a user-defined grammar.  Can contain further instances of itself within its language.
 
     An instance of this class is expected as a parameter when initializing instances of utils.StringParse.StringParser.
     """
 
     name = None
-    items = None
-    output = None
+    tokens = None
 
     def __init__(self):
-        self.items = list()
-        self.output = dict()
+        self.tokens = list()
 
 
     def append(self, item):
-        self.items.append(item)
+        self.tokens.append(item)
 
 
-    def match(self, stringTokens, idx):
-        for item in self.items:
-            match, newIdx, output = item.match(stringTokens, idx)
+    def _match(self, stringTokens, idx):
+        returnDict = dict()
+        for item in self.tokens:
+            match, idx, output = item.match(stringTokens, idx)
 
             if not match:
                 return False, None, None
 
-            self.output.update(output)
+            if isinstance(output, dict):
+                returnDict.update(output)
 
-        return True, newIdx, {self.name: self.output}
-
-
-class NamedToken(_SParseGrammar):
-    name = None
-    token = None
-
-    def append(self, item):
-        if self.token is not None:
-            raise GrammarParsingError("Cannot append %s to NamedToken, already have token: %s" % (item, self.token))
-        self.token = item
-
-
-    def match(self, stringTokens, idx):
-        match, newIdx, output = self.token.match(stringTokens, idx)
-
-        if match:
-            return True, newIdx, {self.name: output}
-
-        return False, None, None
-
-
-class ZeroOrOne(_SParseGrammar):
-    grammar = None
-
-    def __init__(self):
-        self.grammar = Grammar()
-        self.append = self.grammar.append
-
-
-    def match(self, stringTokens, idx):
-        _, newIdx, output = self.grammar.match(stringTokens, idx)
-        return True, newIdx, output
-
-
-class ZeroOrMore(_SParseGrammar):
-    grammar = None
-
-    def __init__(self):
-        self.grammar = Grammar()
-        self.append = self.grammar.append
-
-
-    def match(self, stringTokens, idx):
-        outputs = []
-        while True:
-            match, newIdx, output = self.grammar.match(stringTokens, idx)
-            if not match or idx == newIdx:
-                break
-
-            idx = newIdx
-            outputs.append(output)
-
-
-        return True, newIdx, output or None
-
-
-class OneOfSet(_SParseGrammar):
-    grammars = []
-
-    def __init__(self):
-        self.grammars = []
-
-
-    def append(self, grammar):
-        self.grammars.append(grammar)
-
-
-    def match(self, stringTokens, idx):
-        for grammar in self.grammars:
-            match, newIdx, output = grammar.match(stringTokens, idx)
-            if match:
-                return True, newIdx, output
-        return False, None, None
+        return True, idx, {self.name: returnDict}
 
 
 class Token(_SParseGrammar):
@@ -289,10 +225,6 @@ class Token(_SParseGrammar):
 
 
     def __init__(self, grammarToken):
-        # Ensure that this type of token is correctly formed.
-        if grammarToken[0] not in ('"', "'", '`', '^', '$', '_'):
-            raise GrammarParsingError("Unknown token type: %s." % grammarToken)
-
         if grammarToken[0] != grammarToken[-1]:
             raise GrammarParsingError("Token must start and end with the same character.")
 
@@ -316,11 +248,84 @@ class Token(_SParseGrammar):
             flags = (re.I if grammarToken[0] == '$' else 0)
             self.regex = re.compile(grammarToken[1:-1], flags)
 
+        else:
+            raise GrammarParsingError("Unknown token type: %s." % grammarToken)
 
-    def match(self, stringTokens, idx):
+
+
+    def _match(self, stringTokens, idx):
         match = self.regex.match(stringTokens[idx])
 
         if match:
-            return True, stringTokens[idx], idx + 1
+            return True, idx + 1, None
 
+        return False, None, None
+
+
+class NamedToken(_SParseGrammar):
+    name = None
+    token = None
+
+    def append(self, item):
+        if self.token is not None:
+            raise GrammarParsingError("Cannot append %s to NamedToken, already have token: %s" % (item, self.token))
+        self.token = item
+
+
+    def _match(self, stringTokens, idx):
+        match, newIdx, _ = self.token.match(stringTokens, idx)
+
+        if match:
+            return True, newIdx, {self.name: stringTokens[idx]}
+
+        return False, None, None
+
+class ZeroOrOne(Grammar):
+
+    name = '__ZeroOrOneNameSpace'
+
+    def _match(self, stringTokens, idx):
+        _, newIdx, output = super(ZeroOrOne, self)._match(stringTokens, idx)
+        return True, newIdx or idx, output[self.name]
+
+
+class ZeroOrMore(Grammar):
+
+    name = '__ZeroOrMoreNameSpace'
+
+    def _match(self, stringTokens, idx):
+        outputs = []
+        while idx < len(stringTokens):
+            match, newIdx, output = super(ZeroOrMore, self)._match(stringTokens, idx)
+
+            if not match or idx == newIdx:
+                break
+
+            idx = newIdx
+            outputs.append(output[self.name])
+
+        returnOutputs = collections.defaultdict(list)
+        for output in outputs:
+            for key, val in output.items():
+                returnOutputs[key].append(val)
+
+        return True, idx, dict(returnOutputs) or None
+
+
+class OneOfSet(_SParseGrammar):
+    grammars = []
+
+    def __init__(self):
+        self.grammars = []
+
+
+    def append(self, grammar):
+        self.grammars.append(grammar)
+
+
+    def _match(self, stringTokens, idx):
+        for grammar in self.grammars:
+            match, newIdx, output = grammar.match(stringTokens, idx)
+            if match:
+                return True, newIdx, output
         return False, None, None
