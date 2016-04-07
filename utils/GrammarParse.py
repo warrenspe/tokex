@@ -24,6 +24,8 @@ def _tokenizeGrammar(grammarString):
     """
 
     grammarTokensPattern = "|".join((
+        r"@[^@]*?:",       # Defined Sub Grammar open
+        r"@@",             # Defined Sub Grammar close
         r"\{\{",           # One of Set open
         r"\}\}",           # One of Set close
         r"\(\(",           # Zero or More open
@@ -64,9 +66,74 @@ def _tokenizeGrammar(grammarString):
         return tokens
 
 
-def constructGrammar(grammarString):
+def _processSubGrammarDefinitions(grammarTokens):
+    """
+    Function which expands subgrammar definitions into the grammar string.
+
+    Inputs: grammarTokens - A list of tokens in the grammar
+
+    Outputs: A list of tokens in the grammar, after having expanded user defined grammar tokens.
+    """
+
+    subGrammars = collections.defaultdict(list)
+    subGrammarStack = []
+
+    parsedGrammarTokens = []
+
+    idx = 0
+
+    # Parse out any defined sub grammars
+    for token in grammarTokens:
+        # Handle new defined sub grammar declarations
+        if token[0] == '@' and token[-1] == ':':
+            subGrammarName = token[1:-1]
+            if subGrammarname in subGrammars:
+                raise GrammarParsingError("Redeclaration of defined sub grammar: %s" % subGrammarName)
+
+            subGrammarStack.append(subGrammarName)
+
+        # Handle the closing of sub grammar declarations
+        elif token == '@@':
+            if not subGrammarStack:
+                raise GrammarParsingError("Rogue @@; not currently defining a sub grammar.")
+
+            subGrammarStack.pop()
+
+        # Handle inserting a sub grammar
+        elif token[0] == '@' and token[-1] == '@':
+            subGrammarName = token[1:-1]
+
+            if subGrammarName in subGrammarStack:
+                raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, subGrammarName))
+
+            # Handle applying a sub grammar to another sub grammar declaration
+            if len(subGrammarStack):
+                subGrammars[subGrammarStack[-1]].extend(subGrammars[subGrammarName])
+
+            # Handle applying a sub grammar to the main grammar
+            else:
+                parsedGrammarTokens.extend(subGrammars[subGrammarName])
+
+        # Handle adding tokens to a defined sub grammar
+        elif len(subGrammarStack):
+            subGrammars[subGrammarStack[-1]].append(token)
+
+        # Handle adding tokens not defined in a sub grammar
+        else:
+            parsedGrammarTokens.append(token)
+
+    if len(subGrammarStack):
+        raise GrammarParsingError("Unclosed defined sub grammar: %s" % subGrammarStack[-1])
+
+    return parsedGrammarTokens
+
+
+def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
     """
     Function which accepts a user-defined grammar string and returns an instance of Grammar representing it.
+
+    Inputs: grammarString              - The user-defined grammar string representing the grammar we should construct.
+            allowSubGrammarDefinitions - A boolean, indicating whether or not we should process user defined sub grammars.
     """
 
     stackOpenDict = {
@@ -92,6 +159,9 @@ def constructGrammar(grammarString):
     grammarStack = [grammar]
 
     grammarTokens = _tokenizeGrammar(grammarString)
+
+    if allowSubGrammarDefinitions:
+        grammarTokens = _processSubGrammarDefinitions(grammarString)
 
     if not len(grammarTokens):
         raise GrammarParsingError
