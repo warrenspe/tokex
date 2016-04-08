@@ -211,14 +211,6 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
 class _SParseGrammar(object):
 
     def match(self, stringTokens, idx):
-        """ Wrapper function for _match; see _match for description of inputs & outputs. """
-
-        if idx >= len(stringTokens):
-            return False, None, None
-
-        return self._match(stringTokens, idx)
-
-    def _match(self, stringTokens, idx):
         """
         Function which accepts an iterable of tokens and a current index and determines whether or not this construct
         matches the list at the current position. Should be overridden in subclasses.
@@ -254,7 +246,7 @@ class Grammar(_SParseGrammar):
         self.tokens.append(item)
 
 
-    def _match(self, stringTokens, idx):
+    def match(self, stringTokens, idx):
         returnDict = dict()
         for item in self.tokens:
             match, idx, output = item.match(stringTokens, idx)
@@ -323,7 +315,11 @@ class Token(_SParseGrammar):
 
 
 
-    def _match(self, stringTokens, idx):
+    def match(self, stringTokens, idx):
+        # If the index we're considering is beyond the end of our tokens, we have nothing to match on. Return False.
+        if idx >= len(stringTokens):
+            return False, None, None
+
         match = self.regex.match(stringTokens[idx])
 
         if match:
@@ -342,7 +338,7 @@ class NamedToken(_SParseGrammar):
         self.token = item
 
 
-    def _match(self, stringTokens, idx):
+    def match(self, stringTokens, idx):
         match, newIdx, _ = self.token.match(stringTokens, idx)
 
         if match:
@@ -354,8 +350,14 @@ class ZeroOrOne(Grammar):
 
     name = '__ZeroOrOneNameSpace'
 
-    def _match(self, stringTokens, idx):
-        _, newIdx, output = super(ZeroOrOne, self)._match(stringTokens, idx)
+    def match(self, stringTokens, idx):
+        # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
+        # we can match Zero times, return True.  This allows gramars with trailing ZeroOrOne rules to match strings
+        # which don't use them.
+        if idx >= len(stringTokens):
+            return True, idx, None
+
+        _, newIdx, output = super(ZeroOrOne, self).match(stringTokens, idx)
         return True, newIdx or idx, output[self.name]
 
 
@@ -363,10 +365,10 @@ class ZeroOrMore(Grammar):
 
     name = '__ZeroOrMoreNameSpace'
 
-    def _match(self, stringTokens, idx):
+    def match(self, stringTokens, idx):
         outputs = []
         while idx < len(stringTokens):
-            match, newIdx, output = super(ZeroOrMore, self)._match(stringTokens, idx)
+            match, newIdx, output = super(ZeroOrMore, self).match(stringTokens, idx)
 
             if not match or idx == newIdx:
                 break
@@ -393,7 +395,7 @@ class OneOfSet(_SParseGrammar):
         self.grammars.append(grammar)
 
 
-    def _match(self, stringTokens, idx):
+    def match(self, stringTokens, idx):
         for grammar in self.grammars:
             match, newIdx, output = grammar.match(stringTokens, idx)
             if match:
