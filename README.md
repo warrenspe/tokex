@@ -10,7 +10,7 @@ Admittedly, with a complex enough regex, Python's built-in `re` library will all
 Below is a BNF Grammar of an SParse compatible grammar, describing strings which it can parse.
 
 grammar ::= <statement> | <statement> <grammar>
-statement ::= <token> | <name-quantifier> | <flow-quantifier>
+statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage>
 
 name-quantifier ::= <named-token> | <named-grammar>
 named-token ::= "<" <name> ": " <token> ">"
@@ -21,10 +21,16 @@ zero-or-one ::= "[[" <grammar> "]]"
 zero-or-more ::= "((" <grammar> "))"
 one-of-set ::= "{{" <grammar> "}}"
 
+sub-grammar-declaration ::= "@" <name> ": " <grammar> "@@"
+sub-grammar-usage ::= "@" <name> "@"
+
 token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <not-str> | <not-token>
+name ::= <number> | <uppercase letter> | <lowercase letter> | "_" | "-"
 
 
-#### Below is a detailed description of each type of token that can be used to create a SParse grammar:
+#### Below is a detailed description of each type of token that can be used to create an SParse grammar:
+
+Note: For @name:, (name:, and <name: declarations, the name can consist of any characters from: a-z, A-Z, 0-9, _ and -.
 
     ###
     # Grammar Declarations
@@ -40,7 +46,6 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
                               susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
                               Because of this, you should either not compile untrusted 3rd party grammars, or you should
                               disable sub grammar definition when compiling 3rd party grammars (see documentation below)
-                            * @ is NOT a valid character in the name of a defined sub grammar. Example: @name@grammar:
                             * Defined sub grammars can occur anywhere within your grammar, however the act of defining a
                               sub grammar does not make any modifications to your grammar until it is used.  For example:
                               `'a' @sub: 'b' @@ 'c'` does not match 'a b c', but does match 'a c'
@@ -61,17 +66,17 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
     `Literal Token` - Must match an input token (case sensitive).
 
     ^Regular Expr^  - Matches a token if its python regular expression matches it.
-    $Regular Expr$  - Matches a token if its python regular expression matches it (case insensitive).
+    $Regular Expr$  - Matches a token if its python regular expression matches it (case sensitive).
 
     # Convenience Regular Expressions (case insensitive)
 
-    _               - Matches any token (Short for $.+$)
+    _               - Matches any token (Short for ^.+^)
 
     _str_           - Matches any token, as long as it is a literal string (begins and ends with " or ')
 
     _notstr_        - Matches any token, except literal strings (begins or ends with " or ')
 
-    _!..._          - Matches any token EXCEPT the one passed.  Example: _!from_
+    _!..._          - Matches any token EXCEPT the one passed.  Example: _!from_ (case insensitive)
 
 
     NOTE: to escape ', ", `, ^, $, _ within '...', "...", `...`, ^...^, $...^, _!..._

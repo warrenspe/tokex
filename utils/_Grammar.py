@@ -24,27 +24,27 @@ def _tokenizeGrammar(grammarString):
     """
 
     grammarTokensPattern = "|".join((
-        r"@[^@]*?:",       # Defined Sub Grammar open
-        r"@@",             # Defined Sub Grammar close
-        r"\{\{",           # One of Set open
-        r"\}\}",           # One of Set close
-        r"\(\(",           # Zero or More open
-        r"\)\)",           # Zero or More close
-        r"\[\[",           # Zero or One open
-        r"\]\]",           # Zero or One close
-        r"\(\w*?:",        # Named Grammar open
-        r"\)",             # Named Grammar close
-        r"<\w*?:",         # Named Token open
-        r">",              # Named Token close
-        r"_!.*?(?<!\\)_",  # Not Token Regex
-        r"_notstr_",       # Not String Regex
-        r"_str_",          # String Regex
-        r"_",              # All Regex
-        r"\^.*?(?<!\\)\^", # Regex
-        r"\$.*?(?<!\\)\$", # Case Insensitive Regex
-        r"'.*?(?<!\\)'",   # Literal Token
-        r'".*?(?<!\\)"',   # Literal Token
-        r"`.*?(?<!\\)`",   # Case Insensitive Literal Token
+        r"@\s*[\w-]+?\s*:",  # Defined Sub Grammar open
+        r"@\s*[\w-]*?\s*@",  # Defined Sub Grammar close
+        r"\{\{",             # One of Set open
+        r"\}\}",             # One of Set close
+        r"\(\(",             # Zero or More open
+        r"\)\)",             # Zero or More close
+        r"\[\[",             # Zero or One open
+        r"\]\]",             # Zero or One close
+        r"\(\s*[\w-]+?\s*:", # Named Grammar open
+        r"\)",               # Named Grammar close
+        r"<\s*[\w-]+?\s*:",  # Named Token open
+        r">",                # Named Token close
+        r"_!.*?(?<!\\)_",    # Not Token Regex
+        r"_notstr_",         # Not String Regex
+        r"_str_",            # String Regex
+        r"_",                # All Regex
+        r"\^.*?(?<!\\)\^",   # Regex
+        r"\$.*?(?<!\\)\$",   # Case Insensitive Regex
+        r"'.*?(?<!\\)'",     # Literal Token
+        r'".*?(?<!\\)"',     # Literal Token
+        r"`.*?(?<!\\)`",     # Case Insensitive Literal Token
     ))
 
 
@@ -60,7 +60,14 @@ def _tokenizeGrammar(grammarString):
             match = iterator.next()
             if 'nontoken' in match.groupdict() and match.groupdict()['nontoken'] is not None:
                 raise GrammarParsingError("Unknown token: %s" % match.groupdict()['nontoken'])
-            tokens.append(match.group())
+
+            toAppend = match.group()
+
+            # Check for escapes in tokens, remove the escaping \ if present
+            if toAppend[0] in ('"', "'", '`', '^', '$', '_'):
+                toAppend = toAppend.replace("\\%s" % toAppend[0], toAppend[0])
+
+            tokens.append(toAppend)
 
     except StopIteration:
         return tokens
@@ -86,8 +93,8 @@ def _processSubGrammarDefinitions(grammarTokens):
     for token in grammarTokens:
         # Handle new defined sub grammar declarations
         if token[0] == '@' and token[-1] == ':':
-            subGrammarName = token[1:-1]
-            if subGrammarname in subGrammars:
+            subGrammarName = token[1:-1].strip()
+            if subGrammarName in subGrammars:
                 raise GrammarParsingError("Redeclaration of defined sub grammar: %s" % subGrammarName)
 
             subGrammarStack.append(subGrammarName)
@@ -101,7 +108,7 @@ def _processSubGrammarDefinitions(grammarTokens):
 
         # Handle inserting a sub grammar
         elif token[0] == '@' and token[-1] == '@':
-            subGrammarName = token[1:-1]
+            subGrammarName = token[1:-1].strip()
 
             if subGrammarName in subGrammarStack:
                 raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, subGrammarName))
@@ -161,10 +168,7 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
     grammarTokens = _tokenizeGrammar(grammarString)
 
     if allowSubGrammarDefinitions:
-        grammarTokens = _processSubGrammarDefinitions(grammarString)
-
-    if not len(grammarTokens):
-        raise GrammarParsingError
+        grammarTokens = _processSubGrammarDefinitions(grammarTokens)
 
     for token in grammarTokens:
         if not len(grammarStack):
@@ -179,7 +183,7 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
         # Closing tokens
         elif token in stackCloseDict:
             if not isinstance(grammarStack[-1], stackCloseDict[token]):
-                error = "Cannot Close %s, most recent grammar: %s, not %s" % (token, grammarStack[-1], stackCloseDict[token])
+                error = "Cannot Close %s, most recent: %s, not %s" % (token, grammarStack[-1], stackCloseDict[token])
                 raise GrammarParsingError(error)
 
             grammarStack.pop()
@@ -187,7 +191,7 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
         # Named tokens & grammars
         elif token[0] in stackNamingOpenDict and token[-1] == ":":
             obj = stackNamingOpenDict[token[0]]()
-            obj.name = token[1:-1]
+            obj.name = token[1:-1].strip()
             grammarStack[-1].append(obj)
             grammarStack.append(obj)
 
@@ -278,8 +282,7 @@ class Token(_SParseGrammar):
 
         def __init__(self, literal, caseSensitive=0):
             self.literal = literal
-            if caseSensitive == re.I:
-                self.caseSensitive = True
+            self.caseSensitive = caseSensitive
 
 
         def match(self, token):
@@ -304,7 +307,7 @@ class Token(_SParseGrammar):
                 raise GrammarParsingError("Unknown token: %s" % grammarToken)
 
         elif grammarToken[0] in ("'", '"', '`'):
-            self.regex = Token.LiteralMatcher(grammarToken[1:-1], grammarToken[0] != '`')
+            self.regex = Token.LiteralMatcher(grammarToken[1:-1], grammarToken[0] == '`')
 
         elif grammarToken[0] in ('^', '$'):
             flags = (re.I if grammarToken[0] == '$' else 0)
@@ -384,19 +387,10 @@ class ZeroOrMore(Grammar):
         return True, idx, dict(returnOutputs) or None
 
 
-class OneOfSet(_SParseGrammar):
-    grammars = []
-
-    def __init__(self):
-        self.grammars = []
-
-
-    def append(self, grammar):
-        self.grammars.append(grammar)
-
+class OneOfSet(Grammar):
 
     def match(self, stringTokens, idx):
-        for grammar in self.grammars:
+        for grammar in self.tokens:
             match, newIdx, output = grammar.match(stringTokens, idx)
             if match:
                 return True, newIdx, output
