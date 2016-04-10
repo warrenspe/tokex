@@ -82,54 +82,68 @@ def _processSubGrammarDefinitions(grammarTokens):
     Outputs: A list of tokens in the grammar, after having expanded user defined grammar tokens.
     """
 
-    subGrammars = collections.defaultdict(list)
-    subGrammarStack = []
-
+    # List of tokens after expanding defined sub grammars
     parsedGrammarTokens = []
 
-    idx = 0
+    # Dictionary mapping sub grammar names to tokens they contain
+    # Note: None is being used here to refer to the global namespace, ie the main list of tokens.
+    #       so we map it here to parsedGrammarTokens
+    subGrammars = collections.defaultdict(list, {None: parsedGrammarTokens})
 
-    # Parse out any defined sub grammars
+    # Dictionary for determining the scope of a sub grammar declaration.
+    # Maps the name of a sub grammar to a list of sub grammar names within its scope.
+    subGrammarNameSpaces = collections.defaultdict(list)
+
+    # Stack of sub grammar names to record the current grammar being constructed.
+    subGrammarStack = [None] # Use None to record the topmost, global namespace
+
     for token in grammarTokens:
         # Handle new defined sub grammar declarations
         if token[0] == '@' and token[-1] == ':':
             subGrammarName = token[1:-1].strip()
-            if subGrammarName in subGrammars:
+            if subGrammarName in subGrammars or subGrammarName in subGrammarStack:
                 raise GrammarParsingError("Redeclaration of defined sub grammar: %s" % subGrammarName)
 
             subGrammarStack.append(subGrammarName)
 
         # Handle the closing of sub grammar declarations
         elif token == '@@':
-            if not subGrammarStack:
-                raise GrammarParsingError("Rogue @@; not currently defining a sub grammar.")
+            if subGrammarStack[-1] is None:
+                raise GrammarParsingError("Unexpected @@; not currently defining a sub grammar.")
 
-            subGrammarStack.pop()
+            closedGrammar = subGrammarStack.pop()
+
+            # Remove any sub grammars defined within the recently closed grammar's scope
+            if closedGrammar in subGrammarNameSpaces:
+                for subGrammarName in subGrammarNameSpaces.pop(closedGrammar):
+                    subGrammars.pop(subGrammarName)
+
+            # Add the newly closed sub grammar to its parents namespace
+            subGrammarNameSpaces[subGrammarStack[-1]].append(closedGrammar)
+
+            # Edge case; empty sub grammar has been saved, add a key to our defaultdict so it can be later used
+            if closedGrammar not in subGrammars:
+                subGrammars[closedGrammar] # subGrammars is a defaultdict so accessing the key adds it
 
         # Handle inserting a sub grammar
         elif token[0] == '@' and token[-1] == '@':
             subGrammarName = token[1:-1].strip()
 
-            if subGrammarName in subGrammarStack:
-                raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, subGrammarName))
+            if subGrammarName not in subGrammars:
+                # Give a slightly more descriptive error message if we've seen a declaration for this sub grammar before
+                if subGrammarName in subGrammarStack:
+                    raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, subGrammarName))
 
-            # Handle applying a sub grammar to another sub grammar declaration
-            if len(subGrammarStack):
-                subGrammars[subGrammarStack[-1]].extend(subGrammars[subGrammarName])
+                raise GrammarParsingError("Unknown sub grammar: %s" % subGrammarName)
 
-            # Handle applying a sub grammar to the main grammar
-            else:
-                parsedGrammarTokens.extend(subGrammars[subGrammarName])
+            # Apply the sub grammar to the most recent sub grammar (or topmost grammar)
+            subGrammars[subGrammarStack[-1]].extend(subGrammars[subGrammarName])
 
-        # Handle adding tokens to a defined sub grammar
-        elif len(subGrammarStack):
+        # Handle adding tokens to a defined sub grammar (or topmost grammar)
+        else:
             subGrammars[subGrammarStack[-1]].append(token)
 
-        # Handle adding tokens not defined in a sub grammar
-        else:
-            parsedGrammarTokens.append(token)
-
-    if len(subGrammarStack):
+    if subGrammarStack[-1] is not None:
         raise GrammarParsingError("Unclosed defined sub grammar: %s" % subGrammarStack[-1])
 
     return parsedGrammarTokens

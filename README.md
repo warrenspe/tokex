@@ -34,23 +34,25 @@ Note: For @name:, (name:, and <name: declarations, the name can consist of any c
 Defines a sub grammar which can be later referenced in another grammar by using: `@name@`.  
 `@name: grammar @@`  
 #####Notes:
-- Defined sub grammars can be nested arbitrarily. Example:  
-                              `@grammarA: 'a' 'b' 'c' @@`  
-                              `@grammarB: 'd' @grammarA@ 'e' @grammarA@ @@`
+- Defines a sub grammar which can be later referenced in another grammar by using: @name@.  
+                              `@grammarA: @grammarB: 'Grammar B Only exists inside grammarA' @@  
+                                   @grammarB@ '<- This works'  
+                               @@  
+                               @grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."`  
 - Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
                               the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
                               susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
                               Because of this, you should either not compile untrusted 3rd party grammars, or you should
                               disable sub grammar definition when compiling 3rd party grammars (see documentation below)
-- Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-                              sub grammar does not make any modifications to your grammar until it is used.  For example:  
-                              `'a' @sub: 'b' @@ 'c'` does not match the string `'a b c'`, but does match `'a c'`  
-                              `'a' @sub: 'b' @@ @sub@ 'c'` matches `'a b c'`
-- Defined sub grammars cannot be applied until their declaration is finished.  For example,
-                              while the following is valid:  
-                              `@a: 'a1' @b: 'b' @@ @b@ 'a2' @@` (Matches `"a1 b a2"`)  
-                              the following is invalid:  
-                              `@a: 'a1' @b: @a@ @@ 'a2' @@` (`@a@` cannot appear until the sub grammar 'a' is completed)
+                            * Defined sub grammars can occur anywhere within your grammar, however the act of defining a
+                              sub grammar does not make any modifications to your grammar until it is used.  For example:
+                              `'a' @sub: 'b' @@ 'c'` does not match 'a b c', but does match 'a c'
+                              `'a' @sub: 'b' @@ @sub@ 'c'` matches 'a b c'
+                            * Defined sub grammars cannot be applied until their declaration is finished.  For example,
+                              while the following is valid:
+                              `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")
+                              the following raises an exception.
+                              `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
 
 
     ###

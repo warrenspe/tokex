@@ -389,7 +389,7 @@ class TestGrammarConstruction(tests.SParseTestCase):
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{ {")
 
 
-    def testParseSubGrammarDefinitions(self): # TODO
+    def testParseSubGrammarDefinitions(self):
         grammar = Grammar.constructGrammar(r"""
             @gramA: 'a'@@
             @ gramB: 'b'@@
@@ -402,11 +402,59 @@ class TestGrammarConstruction(tests.SParseTestCase):
             gramG
             : 'g'
             @@
-            @gramH: @gramI: 'i' @@ 'h' @@
-            @gramJ:@gramK: 'k' @@@@
+            @gramH: @gramI: 'i' @@ 'h' @gramI@ @@
+            @gramJ:'j'@gramK: 'k' @@@gramK@@@
+
+            @gramL: 'l'
+                @gramM: 'm' @@
+                @gramN: @gramM@ `n` @@
+                @gramN@
+            @@
+
+            @gramO:
+                @gramO2: 'o' @@
+                @gramP:
+                    @gramP2: 'p' @@
+                    @gramQ:
+                        @gramR: 'r' @@
+                        @gramO2@
+                        @gramP2@
+                        'q'
+                        @gramR@
+                    @@
+                    @gramQ@
+                @@
+                @gramP@
+            @@
+
+            @-: @@
+
+            @gramA@
+            @
+             gramB
+            @
+            @ gramC @
+            @gramD @
+            @ gramE@
+            @gramF@
+            @gramG@
+            @gramH@
+            @gramJ@
+            @gramL@
+            @gramO@
+            @-@
         """)
+
+        self.assertListEqual([token.regex.literal for token in grammar.tokens], [
+            'a', 'b', 'c', 'd', 'e', 'f', 'g',
+            'h', 'i', 'j', 'k', 'l', 'm', 'n',
+            'o', 'p', 'q', 'r',
+        ])
 
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gram A:'a'@@")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gram@A:'a'@@")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gramA: @gramB: @gramA@ @@ @@")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gramA: @gramA@ @@")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@grammer@")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gramA: @gramB: 'b' @@ @@ @gramB@")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "@gramA: @gramA: '' @@ @@ @gramA@")

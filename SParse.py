@@ -17,8 +17,8 @@ class _StringParser(object):
         self.grammar = _Grammar.constructGrammar(grammar, allowSubGrammarDefinitions)
 
 
-    # User-Level functions
-    def tokenizeString(self, inputString):
+    # Internal functions
+    def _tokenizeString(self, inputString):
         """
         Tokenizes a string, splitting on whitespace.  Takes quotes and apostrophes into account when splitting tokens.
         Example: "abc def 'g h i' jkl" -> ['abc', 'def', "'g h i'", 'jkl']
@@ -31,6 +31,7 @@ class _StringParser(object):
         return self.stringTokenizer.findall(inputString)
 
 
+    # User-Level functions
     def match(self, inputString, matchEntirety=True):
         """
         Runs the loaded grammar against a string and returns the output if it matches the input string.
@@ -42,7 +43,7 @@ class _StringParser(object):
         Outputs: A dictionary representing the output of parsing if the string matches the grammar, else None.
         """
 
-        tokens = self.tokenizeString(inputString)
+        tokens = self._tokenizeString(inputString)
 
         match, endIdx, output = grammar.match(tokens)
 
