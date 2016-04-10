@@ -1,14 +1,12 @@
-# NOTE - THIS LIBRARY IS STILL IN DEVELOPMENT & NOT READY FOR USE
-
 # SParse
 A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 ## Why SParse?
-Admittedly, with a complex enough regex, Python's built-in `re` library will allow you to accomplish anything that you could accomplish using SParse.  However, SParse allows for a more readable definition of a grammar than re, which typically amounts to fewer bugs.  As well, SParse allows for grouping of related tokens in named subgrammars, and for subgrammars to be defined and re-used in a way reminiscent of BNF.
+Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using SParse.  However, SParse allows for a more spaced out, readable definition of a grammar than re, which typically leads to fewer bugs.  As well, SParse allows for grouping of related tokens in named sub grammars, and for sub grammars to be defined and re-used in a way reminiscent of BNF.
 
-# Defining a Grammar.
-Below is a BNF Grammar of an SParse compatible grammar, describing strings which it can parse.
-
+## Defining a Grammar.
+Below is a basic BNF Grammar of an SParse compatible grammar, describing strings which it can parse.
+```
 grammar ::= <statement> | <statement> <grammar>
 statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage>
 
@@ -26,35 +24,33 @@ sub-grammar-usage ::= "@" <name> "@"
 
 token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <not-str> | <not-token>
 name ::= <number> | <uppercase letter> | <lowercase letter> | "_" | "-"
+```
 
-
-#### Below is a detailed description of each type of token that can be used to create an SParse grammar:
-
+## Below is a detailed description of each type of token that can be used to create an SParse grammar:
 Note: For @name:, (name:, and <name: declarations, the name can consist of any characters from: a-z, A-Z, 0-9, _ and -.
 
-    ###
-    # Grammar Declarations
-    ###
-
-    @name: grammar @@ - Defines a sub grammar which can be later referenced in another grammar by using: @name@.
-                        Notes:
-                            * Defined sub grammars can be nested arbitrarily. Example:
-                              `@grammarA: 'a' 'b' 'c' @@`
+### Grammar Declarations
+#### Sub Grammar
+Defines a sub grammar which can be later referenced in another grammar by using: `@name@`.  
+`@name: grammar @@`  
+#####Notes:
+- Defined sub grammars can be nested arbitrarily. Example:  
+                              `@grammarA: 'a' 'b' 'c' @@`  
                               `@grammarB: 'd' @grammarA@ 'e' @grammarA@ @@`
-                            * Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
+- Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
                               the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
                               susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
                               Because of this, you should either not compile untrusted 3rd party grammars, or you should
                               disable sub grammar definition when compiling 3rd party grammars (see documentation below)
-                            * Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-                              sub grammar does not make any modifications to your grammar until it is used.  For example:
-                              `'a' @sub: 'b' @@ 'c'` does not match 'a b c', but does match 'a c'
-                              `'a' @sub: 'b' @@ @sub@ 'c'` matches 'a b c'
-                            * Defined sub grammars cannot be applied until their declaration is finished.  For example,
-                              while the following is valid:
-                              `@a: 'a1' @b: 'b' @@ @b@ 'a2' @@` (Matches "a1 b a2")
-                              the following is invalid:
-                              `@a: 'a1' @b: @a@ @@ 'a2' @@` (@a@ cannot appear until the sub grammar 'a' is completed)
+- Defined sub grammars can occur anywhere within your grammar, however the act of defining a
+                              sub grammar does not make any modifications to your grammar until it is used.  For example:  
+                              `'a' @sub: 'b' @@ 'c'` does not match the string `'a b c'`, but does match `'a c'`  
+                              `'a' @sub: 'b' @@ @sub@ 'c'` matches `'a b c'`
+- Defined sub grammars cannot be applied until their declaration is finished.  For example,
+                              while the following is valid:  
+                              `@a: 'a1' @b: 'b' @@ @b@ 'a2' @@` (Matches `"a1 b a2"`)  
+                              the following is invalid:  
+                              `@a: 'a1' @b: @a@ @@ 'a2' @@` (`@a@` cannot appear until the sub grammar 'a' is completed)
 
 
     ###
