@@ -22,7 +22,7 @@ one-of-set ::= "{{" <grammar> "}}"
 sub-grammar-declaration ::= "@" <name> ": " <grammar> "@@"
 sub-grammar-usage ::= "@" <name> "@"
 
-token ::= <literal> | <literal-case-sensitive> | <regex> | <all> | <str> | <not-str> | <not-regex>
+token ::= <literal> | <literal-case-sensitive> | <regex> | <all> | <str> | <not-str> | <not-token>
 name ::= <number> | <uppercase letter> | <lowercase letter> | "_" | "-"
 
 literal ::= '"' <anything> '"' | "'" <anything> "'"
@@ -31,7 +31,7 @@ regex ::= "^" <anything> "^" | "$" <anything> "$"
 all ::= "_"
 str ::= "_str_"
 not-str ::= "_notstr_"
-not-regex ::= "_!" <anything> "_"
+not-token ::= "_!" <anything> "_"
 ```
 
 ## SParse Grammar Tokens
@@ -41,8 +41,6 @@ Below is a description of each type of token that can be used to construct an SP
 - To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`
           respectively, use a `\`. Example: `_!one\_up_`
 
-### Grammar Declarations
-
 ### Tokens
 
 #### Literal Token
@@ -51,26 +49,26 @@ Matches an input token.
 ##### Syntax
 `'Literal Token'`  
 `"Literal Token"`  
-``Literal Token`` (case sensitive)  
+`` `Literal Token` `` (case sensitive)  
 
 ### Regular Expressions
 Matches a token if the `re` regular expression it contains matches it.
 
 #### Syntax
-    `^Regular Expr^`  
-    `$Regular Expr$` (case sensitive)  
+`^Regular Expr^`  
+`$Regular Expr$` (case sensitive)  
 
 ##### Convenience Regular Expressions
 `_` Matches any token (Short for `^.+^`)  
-`_str_` Matches any string token, ie; it begins and ends with a " or '  
-`_notstr_` Matches any token, except string tokens (begins or ends with " or ')  
+`_str_` Matches any string token; ie one that begins and ends with a " or '  
+`_notstr_` Matches any token, except string tokens (begins and ends with " or ')  
 `_!..._` Matches any token EXCEPT the one it contains.  Example: `_!from_` (case insensitive)
 
 ### Naming
 Token wrappers which cause matches within them to be included in the output from the match.
 
 #### Named Tokens
-Named Match. Usage: `<attribute-name: token-to-match>`.
+Usage: `<attribute-name: token-to-match>`.
 Matched tokens wrapped in a named token will have the matched token recorded in the nearest grammar.
 
 ##### Syntax
@@ -80,11 +78,12 @@ Matched tokens wrapped in a named token will have the matched token recorded in 
 After parsing, each named grammar will equate to a dictionary, with all named
 matches made within it being recorded as key: value pairs.
 For a named grammar to match a string, each and every token within it must be able to match the input string.  If any single
-token within the grammar cannot match a token, the grammar does not match the input string.
+token within the grammar cannot match a token, the grammar will not match the input string.
 ##### Syntax
-`(name: ...)` Example: `(test: 'a' <middle: _> 'c')`
-                      Matches: `"a b c"`
-                      Does not match: `"a b"`
+`(name: ...)` Example: `(test: 'a' <middle: _> 'c')`  
+                      Matches: `"a b c"`  
+                      Does not match: `"a b"`  
+                      Returns: `{'test': {'middle': 'b'}}`
 
 ### Flow
 
@@ -96,17 +95,17 @@ Specifies zero or one matches of the grammar it wraps.
 
 #### Zero Or More
 Specifies zero or more matches of the grammar it wraps.
-Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping name: [matches].
+Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping name to a list of matches.
 Named token matches outside of a named grammar will be grouped into a list of matches, while matches inside a named
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(( ... ))` Example: `[[<a: 'a'> (b: <c: 'c'> <d: 'd'>)]]` parsing: `'a c d a c d'`
+`(( ... ))` Example: `((<tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
 =>
 ```
 {
-    'a': ['a', 'a'],
-    'b': [{'c': 'c', 'd': 'd'}, {'c': 'c', 'd': 'd'}]
+    'tok': ['a', 'a'],
+    'gram': [{'b': 'b', 'c': 'c'}, {'b': 'b', 'c': 'c'}]
 }
 ```
 
@@ -116,7 +115,6 @@ Will attempt to match each grammar it contains with the string until one matches
 
 ##### Syntax
 `{{ ... }}`
-
 
 #### Sub Grammar
 Defines a sub grammar which can be later referenced by using: `@name@`.  
@@ -146,8 +144,20 @@ Defines a sub grammar which can be later referenced by using: `@name@`.
   `'a' @b: 'b' @@ @b@ 'c'` matches `'a b c'`
 - Defined sub grammars cannot be applied until their declaration is finished.  For example,
   while the following is valid:  
-  `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")  
-  the following raises an exception.  
-  `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
+```
+@a:
+    'a'
+    @b: 'b' @@
+    @b@
+@@
+@a@
+``` (Matches "a b")  
+The following raises an exception.  
+```
+@a:
+    'a'
+    @b: @a@ @@
+@@
+``` (@a@ cannot appear until the sub grammar 'a' is completed)
 
 # Examples
