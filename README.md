@@ -2,10 +2,10 @@
 A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 ## Why SParse?
-Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using SParse.  However, SParse allows for a more spaced out, readable definition of a grammar than re, which typically leads to fewer bugs.  As well, SParse allows for grouping of related tokens in named sub grammars, and for sub grammars to be defined and re-used in a way reminiscent of BNF.
+Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using SParse.  However, SParse allows for a more spaced out, readable definition of a grammar than re, which typically leads to fewer bugs.  As well, SParse allows for grouping of related tokens in named sub grammars, which can significantly cut down on the overall size of the grammar, and for sub grammars to be defined and re-used in a way reminiscent of BNF.
 
 ## Defining a Grammar.
-Below is a basic BNF Grammar of an SParse compatible grammar, describing strings which it can parse.
+Below is a BNF representation of an SParse compatible grammar.
 ```
 grammar ::= <statement> | <statement> <grammar>
 statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage>
@@ -22,50 +22,26 @@ one-of-set ::= "{{" <grammar> "}}"
 sub-grammar-declaration ::= "@" <name> ": " <grammar> "@@"
 sub-grammar-usage ::= "@" <name> "@"
 
-token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <not-str> | <not-token>
+token ::= <literal> | <literal-case-sensitive> | <regex> | <all> | <str> | <not-str> | <not-regex>
 name ::= <number> | <uppercase letter> | <lowercase letter> | "_" | "-"
+
+literal ::= '"' <anything> '"' | "'" <anything> "'"
+literal-case-sensitive ::= '`' <anything> '`'
+regex ::= "^" <anything> "^" | "$" <anything> "$"
+all ::= "_"
+str ::= "_str_"
+not-str ::= "_notstr_"
+not-regex ::= "_!" <anything> "_"
 ```
 
 ## SParse Grammar Tokens
 Below is a description of each type of token that can be used to construct an SParse grammar.
 #### General Notes
-- For `@name:...@@`, `(name:...)`, and `<name:...>` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
+- For `@name: ... @@`, `(name: ... )`, and `<name: ... >` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
 - To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`
           respectively, use a `\`. Example: `_!one\_up_`
 
 ### Grammar Declarations
-
-#### Sub Grammar
-Defines a sub grammar which can be later referenced by using: `@name@`.  
-
-##### Syntax
-`@name: grammar @@`  
-
-##### Notes:
-- Defined sub grammars can be nested arbitrarily, but only exist within the scope of the
-  namespace of the sub grammar they were defined in.  Sub grammars defined outside of any
-  other sub grammars are considered global. Example:
-```
-@grammarA: 
-    @grammarB: 'Grammar B Only exists inside grammarA' @@  
-    @grammarB@ '<- This works'  
-@@  
-@grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."
-```  
-- Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
-  the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
-  susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
-  Because of this, you should either not compile untrusted 3rd party grammars, or you should
-  disable sub grammar definitions when compiling 3rd party grammars (see documentation below).
-- Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-  sub grammar does not make any modifications to your grammar until it is used.  For example:  
-  `'a' @b: 'b' @@ 'c'` does not match `'a b c'`, but does match `'a c'`  
-  `'a' @b: 'b' @@ @b@ 'c'` matches `'a b c'`
-- Defined sub grammars cannot be applied until their declaration is finished.  For example,
-  while the following is valid:  
-  `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")  
-  the following raises an exception.  
-  `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
 
 ### Tokens
 
@@ -140,5 +116,38 @@ Will attempt to match each grammar it contains with the string until one matches
 
 ##### Syntax
 `{{ ... }}`
+
+
+#### Sub Grammar
+Defines a sub grammar which can be later referenced by using: `@name@`.  
+
+##### Syntax
+`@name: grammar @@`  
+
+##### Notes:
+- Defined sub grammars can be nested arbitrarily, but only exist within the scope of the
+  namespace of the sub grammar they were defined in.  Sub grammars defined outside of any
+  other sub grammars are considered global. Example:
+```
+@grammarA: 
+    @grammarB: 'Grammar B Only exists inside grammarA' @@  
+    @grammarB@ '<- This works'  
+@@  
+@grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."
+```  
+- Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
+  the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
+  susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
+  Because of this, you should either not compile untrusted 3rd party grammars, or you should
+  disable sub grammar definitions when compiling 3rd party grammars (see documentation below).
+- Defined sub grammars can occur anywhere within your grammar, however the act of defining a
+  sub grammar does not make any modifications to your grammar until it is used.  For example:  
+  `'a' @b: 'b' @@ 'c'` does not match `'a b c'`, but does match `'a c'`  
+  `'a' @b: 'b' @@ @b@ 'c'` matches `'a b c'`
+- Defined sub grammars cannot be applied until their declaration is finished.  For example,
+  while the following is valid:  
+  `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")  
+  the following raises an exception.  
+  `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
 
 # Examples
