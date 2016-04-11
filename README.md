@@ -26,93 +26,119 @@ token ::= <literal> | <literal-case-insensitive> | <regex> | <all> | <str> | <no
 name ::= <number> | <uppercase letter> | <lowercase letter> | "_" | "-"
 ```
 
-## Below is a detailed description of each type of token that can be used to create an SParse grammar:
-Note: For @name:, (name:, and <name: declarations, the name can consist of any characters from: a-z, A-Z, 0-9, _ and -.
+## SParse Grammar Tokens
+Below is a description of each type of token that can be used to construct an SParse grammar.
+#### General Notes
+- For `@name:...@@`, `(name:...)`, and `<name:...>` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
+- To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`
+          respectively, use a `\`. Example: `_!one\_up_`
 
 ### Grammar Declarations
+
 #### Sub Grammar
-Defines a sub grammar which can be later referenced in another grammar by using: `@name@`.  
+Defines a sub grammar which can be later referenced by using: `@name@`.  
+
+##### Syntax
 `@name: grammar @@`  
-#####Notes:
-- Defines a sub grammar which can be later referenced in another grammar by using: @name@.  
-                              `@grammarA: @grammarB: 'Grammar B Only exists inside grammarA' @@  
-                                   @grammarB@ '<- This works'  
-                               @@  
-                               @grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."`  
+
+##### Notes:
+- Defined sub grammars can be nested arbitrarily, but only exist within the scope of the
+  namespace of the sub grammar they were defined in.  Sub grammars defined outside of any
+  other sub grammars are considered global. Example:
+```
+@grammarA: 
+    @grammarB: 'Grammar B Only exists inside grammarA' @@  
+    @grammarB@ '<- This works'  
+@@  
+@grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."
+```  
 - Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
-                              the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
-                              susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
-                              Because of this, you should either not compile untrusted 3rd party grammars, or you should
-                              disable sub grammar definition when compiling 3rd party grammars (see documentation below)
-                            * Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-                              sub grammar does not make any modifications to your grammar until it is used.  For example:
-                              `'a' @sub: 'b' @@ 'c'` does not match 'a b c', but does match 'a c'
-                              `'a' @sub: 'b' @@ @sub@ 'c'` matches 'a b c'
-                            * Defined sub grammars cannot be applied until their declaration is finished.  For example,
-                              while the following is valid:
-                              `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")
-                              the following raises an exception.
-                              `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
+  the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
+  susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
+  Because of this, you should either not compile untrusted 3rd party grammars, or you should
+  disable sub grammar definitions when compiling 3rd party grammars (see documentation below).
+- Defined sub grammars can occur anywhere within your grammar, however the act of defining a
+  sub grammar does not make any modifications to your grammar until it is used.  For example:  
+  `'a' @b: 'b' @@ 'c'` does not match `'a b c'`, but does match `'a c'`  
+  `'a' @b: 'b' @@ @b@ 'c'` matches `'a b c'`
+- Defined sub grammars cannot be applied until their declaration is finished.  For example,
+  while the following is valid:  
+  `@a: 'a' @b: 'b' @@ @b@ @@ @a@` (Matches "a b")  
+  the following raises an exception.  
+  `@a: 'a' @b: @a@ @@ @@` (@a@ cannot appear until the sub grammar 'a' is completed)
 
+### Tokens
 
-    ###
-    # Tokens
-    ###
+#### Literal Token
+Matches an input token.
 
-    'Literal Token' - Must match an input token.
-    "Literal Token" - Must match an input token.
-    `Literal Token` - Must match an input token (case sensitive).
+##### Syntax
+`'Literal Token'`  
+`"Literal Token"`  
+``Literal Token`` (case sensitive)  
 
-    ^Regular Expr^  - Matches a token if its python regular expression matches it.
-    $Regular Expr$  - Matches a token if its python regular expression matches it (case sensitive).
+### Regular Expressions
+Matches a token if the `re` regular expression it contains matches it.
 
-    # Convenience Regular Expressions (case insensitive)
+#### Syntax
+    `^Regular Expr^`  
+    `$Regular Expr$` (case sensitive)  
 
-    _               - Matches any token (Short for ^.+^)
+##### Convenience Regular Expressions
+`_` Matches any token (Short for `^.+^`)  
+`_str_` Matches any string token, ie; it begins and ends with a " or '  
+`_notstr_` Matches any token, except string tokens (begins or ends with " or ')  
+`_!..._` Matches any token EXCEPT the one it contains.  Example: `_!from_` (case insensitive)
 
-    _str_           - Matches any token, as long as it is a literal string (begins and ends with " or ')
+### Naming
+Token wrappers which cause matches within them to be included in the output from the match.
 
-    _notstr_        - Matches any token, except literal strings (begins or ends with " or ')
+#### Named Tokens
+Named Match. Usage: `<attribute-name: token-to-match>`.
+Matched tokens wrapped in a named token will have the matched token recorded in the nearest grammar.
 
-    _!..._          - Matches any token EXCEPT the one passed.  Example: _!from_ (case insensitive)
+##### Syntax
+`<name: token>` Examples: `<colName: _>` `<innerJoin: "inner">`
 
+#### Named Grammar
+After parsing, each named grammar will equate to a dictionary, with all named
+matches made within it being recorded as key: value pairs.
+For a named grammar to match a string, each and every token within it must be able to match the input string.  If any single
+token within the grammar cannot match a token, the grammar does not match the input string.
+##### Syntax
+`(name: ...)` Example: `(test: 'a' <middle: _> 'c')`
+                      Matches: `"a b c"`
+                      Does not match: `"a b"`
 
-    NOTE: to escape ', ", `, ^, $, _ within '...', "...", `...`, ^...^, $...^, _!..._
-          respectively, use a \ - Example: _!one\_up_
+### Flow
 
+#### Zero Or One
+Specifies zero or one matches of the grammar it wraps.
 
-    ###
-    # Naming
-    ###
+##### Syntax
+`[[ ... ]]`
 
-    <name: token>   - Named Match. Usage: <attribute-name: token-to-match>.
-                      Tokens matched using a named match will have the matched token recorded in the nearest grammar.
-                      See named grammars below.  Examples: <colName: _> <innerJoin: "inner">
+#### Zero Or More
+Specifies zero or more matches of the grammar it wraps.
+Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping name: [matches].
+Named token matches outside of a named grammar will be grouped into a list of matches, while matches inside a named
+grammar will be grouped into a list of dictionaries of matches.
 
-    (name: ...)     - Named Grammar. After parsing, each named grammar will equate to a dictionary, with all named
-                      matches made within it being recorded as key: value pairs, name: matched-token.
-                      To match a string, it must be able to successfully match all of the tokens it contains. If it
-                      cannot match a token, no match is made. Example: (test: 'a' 'b' 'c')
-                      Matches: "a b c"
-                      Does not match: "a b"
+##### Syntax
+`(( ... ))` Example: `[[<a: 'a'> (b: <c: 'c'> <d: 'd'>)]]` parsing: `'a c d a c d'`
+=>
+```
+{
+    'a': ['a', 'a'],
+    'b': [{'c': 'c', 'd': 'd'}, {'c': 'c', 'd': 'd'}]
+}
+```
 
-    ###
-    # Flow
-    ###
+#### One of Set
+Specifies that one grammar of the set of grammars it contains should match the input string at the current position.
+Will attempt to match each grammar it contains with the string until one matches in its entirety.
 
-    [[...]]         - Specifies zero or one matches of the grammar it wraps.
-
-    ((...))         - Specifies zero or more matches of the grammar it wraps.  Named grammars & named tokens wrapped by
-                      Zero Or More brakets will returned as a list of dictionaries.  Named token matches outside of a
-                      named grammar will be grouped into a list, while matches inside a named grammar will be grouped
-                      into a dictionary.
-                      Example: [[<a: 'a'> (b: <c: 'c'> <d: 'd'>)]]  <- 'a c d a c d'
-                      => {
-                             'a': ['a', 'a'],
-                             'b': [{'c': 'c', 'd': 'd'}, {'c': 'c', 'd': 'd'}]
-                         }
-
-    {{...}}         - Specifies one grammar of the set.  Will attempt to match each grammar it contains with the string
-                      until one matches in its entirety.
+##### Syntax
+`{{ ... }}`
 
 # Examples
