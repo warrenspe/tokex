@@ -100,7 +100,7 @@ Named token matches outside of a named grammar will be grouped into a list of ma
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(( ... ))` Example: `((<tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
+`(( ... ))` Example: `(( <tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
 =>
 ```
 {
@@ -160,6 +160,6 @@ The following raises an exception.
     @b: @a@ @@
 @@
 ```
-(@a@ cannot appear until the sub grammar 'a' is completed)
+(`@a@` cannot appear until the sub grammar 'a' is completed)
 
 # Examples
