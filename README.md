@@ -151,13 +151,15 @@ Defines a sub grammar which can be later referenced by using: `@name@`.
     @b@
 @@
 @a@
-``` (Matches "a b")  
-The following raises an exception.  
+```
+(Matches "a b")  
+The following raises an exception.
 ```
 @a:
     'a'
     @b: @a@ @@
 @@
-``` (@a@ cannot appear until the sub grammar 'a' is completed)
+```
+(@a@ cannot appear until the sub grammar 'a' is completed)
 
 # Examples
