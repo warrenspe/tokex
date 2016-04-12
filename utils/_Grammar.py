@@ -48,9 +48,10 @@ def _tokenizeGrammar(grammarString):
     ))
 
 
+    commentTokenPattern =  r"(?P<comment>#[^\n]*(\n|$))"
     nonGrammarTokenPattern = r"(?P<nontoken>\S+)"
 
-    pattern = "|".join((grammarTokensPattern, nonGrammarTokenPattern))
+    pattern = "|".join((grammarTokensPattern, commentTokenPattern, nonGrammarTokenPattern))
 
     iterator = re.finditer(pattern, grammarString)
 
@@ -60,6 +61,9 @@ def _tokenizeGrammar(grammarString):
             match = iterator.next()
             if 'nontoken' in match.groupdict() and match.groupdict()['nontoken'] is not None:
                 raise GrammarParsingError("Unknown token: %s" % match.groupdict()['nontoken'])
+
+            elif 'comment' in match.groupdict() and match.groupdict()['comment'] is not None:
+                continue
 
             toAppend = match.group()
 
@@ -375,7 +379,8 @@ class ZeroOrOne(Grammar):
             return True, idx, None
 
         _, newIdx, output = super(ZeroOrOne, self).match(stringTokens, idx)
-        return True, newIdx or idx, output[self.name]
+
+        return True, newIdx or idx, (None if output is None else output[self.name])
 
 
 class ZeroOrMore(Grammar):
@@ -391,7 +396,8 @@ class ZeroOrMore(Grammar):
                 break
 
             idx = newIdx
-            outputs.append(output[self.name])
+            if output is not None:
+                outputs.append(output[self.name])
 
         returnOutputs = collections.defaultdict(list)
         for output in outputs:

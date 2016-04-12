@@ -6,15 +6,21 @@ File containing a string parsing class which upon being fed a utils.GrammarParse
 import re
 
 # Project imports
-import _Grammar
+import utils._Grammar
 
 class _StringParser(object):
 
     grammar = None
-    stringTokenizer = re.compile("""("[^"]*"|'[^']*'|\S+)""")
+    stringTokenizer = None
+    tokenizerRegexes = [
+        '"[^"]*"',
+        "'[^']*'",
+        '\w+',
+        '\S'
+    ]
 
     def __init__(self, grammar, allowSubGrammarDefinitions):
-        self.grammar = _Grammar.constructGrammar(grammar, allowSubGrammarDefinitions)
+        self.grammar = utils._Grammar.constructGrammar(grammar, allowSubGrammarDefinitions)
 
 
     # Internal functions
@@ -28,7 +34,7 @@ class _StringParser(object):
         Outputs: An iterable of tokens.
         """
 
-        return self.stringTokenizer.findall(inputString)
+        return re.findall("(%s)" % "|".join(self.tokenizerRegexes), inputString)
 
 
     # User-Level functions
@@ -45,9 +51,9 @@ class _StringParser(object):
 
         tokens = self._tokenizeString(inputString)
 
-        match, endIdx, output = grammar.match(tokens)
+        match, endIdx, output = self.grammar.match(tokens, 0)
 
-        if match and (not matchEntirety or endIndex == len(tokens)):
+        if match and (not matchEntirety or endIdx == len(tokens)):
             return output
 
 
@@ -56,22 +62,24 @@ def compile(grammar, allowSubGrammarDefinitions=True):
     Constructs and returns an instance of _StringParser for repeated parsing of strings using the given grammar.
     """
 
-    return _StringParser(grammar)
+    return _StringParser(grammar, allowSubGrammarDefinitions)
 
 
-def match(self, grammarString, inputString, matchEntirety=True, allowSubGrammarDefinitions=True):
+def match(grammar, inputString, matchEntirety=True, allowSubGrammarDefinitions=True):
     """
     Convenience function for performing matches using a grammar against a string.
 
-    Inputs: grammar                    - The grammar to use to parse the input string.
-            inputString                - The string to be parsed.
-            matchEntirety              - A boolean, if True requires the entire string to be matched by the grammar.
-                                         if False, trailing tokens not matched by the grammar will not cause a match failure.
-            allowSubGrammarDefinitions - A Boolean, indicating whether or not sub grammar declarations, (@name: grammar @@),
-                                         should be processed.  If grammarString has come from an untrusted source this should
-                                         be set to False, to mitigate the potential for a `Billion Laughs` attack.
+    Inputs: grammar       - The grammar to use to parse the input string.
+            inputString   - The string to be parsed.
+            matchEntirety - A boolean, if True requires the entire string to be matched by the grammar.
+                                       if False, trailing tokens not matched by the grammar will not
+                                                 cause a match failure.
+            allowSubGrammarDefinitions - A Boolean, indicating whether or not sub grammar declarations,
+                                         (@name: grammar @@), should be processed.  If grammarString has
+                                         come from an untrusted source this should be set to False, to
+                                         mitigate the potential for a `Billion Laughs` attack.
 
     Outputs: The result of matching the inputString, if it matches, else None.
     """
 
-    return _StringParser(grammar).match(inputString, matchEntirety=matchEntirety)
+    return _StringParser(grammar, allowSubGrammarDefinitions).match(inputString, matchEntirety=matchEntirety)
