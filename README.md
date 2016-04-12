@@ -2,7 +2,12 @@
 A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 ## Why Tokex?
-Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using Tokex.  The main difference between Tokex and re is that re is focused on matching characters, while Tokex is focused on matching tokens.  However, Tokex allows for a more spaced out, readable definition of a grammar than re which can result in fewer bugs, and Tokex allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.
+Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using Tokex.  The main difference between Tokex and re is that re is focused on matching characters, while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar than re which can result in fewer bugs, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.
+
+## Usage
+
+## Notes
+Input strings will be tokenized based on the following regex: TODO
 
 ## Defining a Grammar.
 Below is a BNF representation of a Tokex compatible grammar.
@@ -42,48 +47,61 @@ Below is a description of each type of token that can be used to construct an To
           respectively, use a `\`. Example: `_!one\_up_`
 
 ### Tokens
-
-#### Literal Token
-Matches an input token.
+Matches an input token exactly.
 
 ##### Syntax
 `'Literal Token'`  
 `"Literal Token"`  
 `` `Literal Token` `` (case sensitive)  
 
+##### Examples
+`'insert' 'into '`
+`"butterscotch" "pudding"`
+`` `CAPITAL` ``
+
 ### Regular Expressions
 Matches a token if the `re` regular expression it contains matches it.
 
-#### Syntax
+##### Syntax
 `^Regular Expr^`  
 `$Regular Expr$` (case sensitive)  
+
+##### Examples
+`^(yes|no|maybe)^`
+`$(FROM|From|from)$`
 
 ##### Convenience Regular Expressions
 `_` Matches any token (Short for `^.+^`)  
 `_str_` Matches any string token; ie one that begins and ends with a " or '  
 `_notstr_` Matches any token, except string tokens (begins and ends with " or ')  
-`_!..._` Matches any token EXCEPT the one it contains.  Example: `_!from_` (case insensitive)
+`_!..._` Matches any token except the one it contains.  Example: `_!from_` (case insensitive)
 
 ### Naming
 Token wrappers which cause matches within them to be included in the output from the match.
 
 #### Named Tokens
-Usage: `<attribute-name: token-to-match>`.
 Matched tokens wrapped in a named token will have the matched token recorded in the nearest grammar.
 
 ##### Syntax
-`<name: token>` Examples: `<colName: _>` `<innerJoin: "inner">`
+`<match-name: token-to-match>`
+
+##### Examples
+Examples: `<colName: _>` `<innerJoin: "inner">`
 
 #### Named Grammar
 After parsing, each named grammar will equate to a dictionary, with all named
 matches made within it being recorded as key: value pairs.
 For a named grammar to match a string, each and every token within it must be able to match the input string.  If any single
 token within the grammar cannot match a token, the grammar will not match the input string.
+
 ##### Syntax
-`(name: ...)` Example: `(test: 'a' <middle: _> 'c')`  
-                      Matches: `"a b c"`  
-                      Does not match: `"a b"`  
-                      Returns: `{'test': {'middle': 'b'}}`
+`(name: ...)`
+
+##### Examples
+`(test: 'a' <middle: _> 'c')`  
+Matches: `"a b c"`  
+Does not match: `"a b"`  
+Returns: `{'test': {'middle': 'b'}}`  
 
 ### Flow
 
@@ -93,6 +111,9 @@ Specifies zero or one matches of the grammar it wraps.
 ##### Syntax
 `[[ ... ]]`
 
+##### Examples
+`'DROP' 'TABLE' [[<ifExists: 'IF'> 'EXISTS']] <tableName: _notstr_>`
+
 #### Zero Or More
 Specifies zero or more matches of the grammar it wraps.
 Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping name to a list of matches.
@@ -100,7 +121,19 @@ Named token matches outside of a named grammar will be grouped into a list of ma
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(( ... ))` Example: `(( <tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
+`(( ... ))`
+
+##### Examples
+```
+'INSERT' 'INTO' <tableName: _notstr_> 'VALUES'
+((
+  (value:
+    '(' (( _ )) ') ','
+  )
+))
+```
+
+`(( <tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
 =>
 ```
 {
@@ -116,7 +149,22 @@ Will attempt to match each grammar it contains with the string until one matches
 ##### Syntax
 `{{ ... }}`
 
-#### Sub Grammar
+##### Examples
+Match one grammar of a set, zero or many times:
+```
+'ALTER' 'TABLE' <tableName: _notstr_>
+((
+  {{
+    (addColumn: 'add' 'column' <name: _> <type: _>)
+    (removeColumn: 'remove' 'column' <name: _>)
+    (modifyColumn: 'modify' 'column' <name: _> <newName: _> <newType: _>)
+    (addIndex: 'add' 'index' <column: _>)
+    (removeIndex: 'remove' 'index' <column: _>)
+  }}
+))
+```
+
+### Sub Grammar
 Defines a sub grammar which can be later referenced by using: `@name@`.  
 
 ##### Syntax
@@ -161,5 +209,3 @@ The following raises an exception.
 @@
 ```
 (`@a@` cannot appear until the sub grammar 'a' is completed)
-
-# Examples
