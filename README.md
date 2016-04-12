@@ -25,13 +25,23 @@ The following examples will show parsing of tokens in simplified SQL queries
 ```
 
 ## Notes
-Input strings will be tokenized based on the following regex: TODO
+By default, input strings will be tokenized based on the following rules, in the following order of precedence:
+
+All occurrances of "[^"]*" or '[^']*' are broken up into their own tokens
+All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)
+All other non-white space characters are broken up into their own 1-character tokens.
+
+The tokenizing behavior can be modified by updating the attribute `tokenizerRegexes` of a compiled grammar.  This attribute refers to a list of strings that are joined using "|" and passed to the `re.findall` function to tokenize the query.  As an example:  
+- Allow '#' characters to be joined in tokens with other alphanumeric characters to, say, create tokens like: "Phone#" (instead of "Phone", "#")
+  - `parser.tokenizerRegexes[2] = "[\w#]+`
+
+This 'feature' will be getting reworked in a future version.
 
 ## Defining a Grammar.
 Below is a BNF representation of a Tokex compatible grammar.
 ```
 grammar ::= <statement> | <statement> <grammar>
-statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage>
+statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage> | <comment>
 
 name-quantifier ::= <named-token> | <named-grammar>
 named-token ::= "<" <name> ": " <token> ">"
@@ -41,6 +51,8 @@ flow-quantifier ::= <zero-or-one> | <zero-or-more> | <one-of-set>
 zero-or-one ::= "[[" <grammar> "]]"
 zero-or-more ::= "((" <grammar> "))"
 one-of-set ::= "{{" <grammar> "}}"
+
+comment ::= "#" <anything> "\n" | "#" <anything> "EOF"
 
 sub-grammar-declaration ::= "@" <name> ": " <grammar> "@@"
 sub-grammar-usage ::= "@" <name> "@"
@@ -63,6 +75,7 @@ Below is a description of each type of token that can be used to construct an To
 - For `@name: ... @@`, `(name: ... )`, and `<name: ... >` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
 - To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`
           respectively, use a `\`. Example: `_!one\_up_`
+- Comments can be included in grammars in a similar fashion to python by using hashtags.
 
 ### Tokens
 Matches an input token exactly.
