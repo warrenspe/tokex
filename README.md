@@ -1,11 +1,11 @@
-# SParse
+# Tokex
 A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
-## Why SParse?
-Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using SParse.  However, SParse allows for a more spaced out, readable definition of a grammar than re, which typically leads to fewer bugs.  As well, SParse allows for grouping of related tokens in named sub grammars, which can significantly cut down on the overall size of the grammar, and for sub grammars to be defined and re-used in a way reminiscent of BNF.
+## Why Tokex?
+Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you could accomplish using Tokex.  The main difference between Tokex and re is that re is focused on matching characters, while Tokex is focused on matching tokens.  However, Tokex allows for a more spaced out, readable definition of a grammar than re which can result in fewer bugs, and Tokex allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.
 
 ## Defining a Grammar.
-Below is a BNF representation of an SParse compatible grammar.
+Below is a BNF representation of a Tokex compatible grammar.
 ```
 grammar ::= <statement> | <statement> <grammar>
 statement ::= <token> | <name-quantifier> | <flow-quantifier> | <sub-grammar-declaration> | <sub-grammar-usage>
@@ -34,8 +34,8 @@ not-str ::= "_notstr_"
 not-token ::= "_!" <anything> "_"
 ```
 
-## SParse Grammar Tokens
-Below is a description of each type of token that can be used to construct an SParse grammar.
+## Tokex Grammar Tokens
+Below is a description of each type of token that can be used to construct an Tokex grammar.
 #### General Notes
 - For `@name: ... @@`, `(name: ... )`, and `<name: ... >` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
 - To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`

@@ -226,7 +226,7 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
 # User-defined grammar constructs
 ###
 
-class _SParseGrammar(object):
+class _TokexGrammar(object):
 
     def match(self, stringTokens, idx):
         """
@@ -246,7 +246,7 @@ class _SParseGrammar(object):
         raise NotImplementedError
 
 
-class Grammar(_SParseGrammar):
+class Grammar(_TokexGrammar):
     """
     Grammar class representing a user-defined grammar.  Can contain further instances of itself within its language.
 
@@ -278,7 +278,7 @@ class Grammar(_SParseGrammar):
         return True, idx, {self.name: returnDict}
 
 
-class Token(_SParseGrammar):
+class Token(_TokexGrammar):
     """
     Token class representing one of the various types of tokens that can be present in a user-defined grammar.
     """
@@ -345,7 +345,7 @@ class Token(_SParseGrammar):
         return False, None, None
 
 
-class NamedToken(_SParseGrammar):
+class NamedToken(_TokexGrammar):
     name = None
     token = None
 
