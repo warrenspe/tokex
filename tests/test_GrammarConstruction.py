@@ -165,6 +165,13 @@ class TestGrammarConstruction(tests.TokexTestCase):
             ['a', 'b', 'c', 'q', 'r', 'e']
         )
 
+        grammar = Grammar.constructGrammar("'c' # letters")
+
+        self.assertListEqual(
+            [t.regex.literal for t in grammar.tokens],
+            ['c']
+        )
+
 
     def testParseError(self):
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "a")
