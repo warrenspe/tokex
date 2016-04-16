@@ -54,7 +54,7 @@ class _StringParser(object):
         match, endIdx, output = self.grammar.match(tokens, 0)
 
         if match and (not matchEntirety or endIdx == len(tokens)):
-            return output
+            return output[None]
 
 
 def compile(grammar, allowSubGrammarDefinitions=True):

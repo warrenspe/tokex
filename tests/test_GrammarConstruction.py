@@ -5,7 +5,7 @@ import re
 import utils._Grammar as Grammar
 import tests
 
-class TestGrammarConstruction(tests.SParseTestCase):
+class TestGrammarConstruction(tests.TokexTestCase):
 
     def testTokenizeGrammar(self):
         grammarString = r"""
@@ -152,6 +152,26 @@ class TestGrammarConstruction(tests.SParseTestCase):
         self.assertIsInstance(grammar.tokens[14].regex, re._pattern_type)
         self.assertTrue(grammar.tokens[14].regex.flags & re.I)
         self.assertEqual(grammar.tokens[14].regex.pattern, 'i`\'"$^j')
+
+    def testParseComment(self):
+        grammar = Grammar.constructGrammar(r"""
+            'a' 'b' 'c' # letters
+            # some more letters
+            'q' "r" `e`
+        """)
+
+        self.assertListEqual(
+            [t.regex.literal for t in grammar.tokens],
+            ['a', 'b', 'c', 'q', 'r', 'e']
+        )
+
+
+    def testParseError(self):
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "a")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "()")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, ",")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "<>")
+
 
     def testParseNamedToken(self):
         grammar = Grammar.constructGrammar(r"""

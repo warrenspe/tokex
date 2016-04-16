@@ -8,7 +8,7 @@ sys.path.append('.')
 # Globals
 TEST_DIR = os.path.split(os.path.dirname(os.path.realpath(__file__)))[-1]
 
-class SParseTestCase(unittest.TestCase):
+class TokexTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         pass
@@ -33,7 +33,7 @@ def _runSuite(testSuite, verbosity):
     raw_input("\nPress enter to close.")
 
 def main():
-    parser = argparse.ArgumentParser(description="Execute SParse Unit Tests")
+    parser = argparse.ArgumentParser(description="Execute Tokex Unit Tests")
     parser.add_argument("testFiles", nargs="*")
     parser.add_argument("--verbosity", nargs="?", choices=['1', '2'], default=1)
     args = parser.parse_args()
