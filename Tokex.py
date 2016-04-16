@@ -1,5 +1,8 @@
 """
-    File containing a string parsing class which upon being fed a utils.GrammarParse.Grammar object, 
+    File containing a string parsing class which can accept a grammar and input string to return a dictionary of
+    parsed tokens from the string, depending on whether or not the grammar given matches the input string and which
+    named tokens exist within the grammar.
+
     Copyright (C) 2016 Warren Spencer
     warrenspencer27@gmail.com
 
