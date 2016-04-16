@@ -160,7 +160,7 @@ Tokex.match("""
     'INSERT' 'INTO' <tableName: _notstr_> 'VALUES'
     ((
         (value:
-            '(' (( _ )) ')'
+            '(' (( <val:_!\)_> )) ')' [[',']]
         )
     ))
     """, "INSERT INTO test VALUES (1, 2, 3), (4, 5, 6)")
