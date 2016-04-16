@@ -2,10 +2,10 @@
 A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 ## Why Tokex?
-Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between Tokex and re is that re is focused on matching characters, while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar than re which can result in fewer bugs, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.
+Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between the two is that re is focused on matching characters while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar which can result in fewer bugs than if it were written as a re pattern, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.  Finally, Tokex allows for Python style comments to be inserted directly into the grammar.
 
 ## Usage
-Tokex attempts to emulates re in its usage.  Tokex offers two functions, compile and match.
+Tokex attempts to emulates re in its usage by offering two functions, compile and match.
 
 **Tokex.compile** accepts a grammar and returns an object with a match function following the same spec as Tokex.match.  Tokex.compile is useful in much the same way as re.compile, for compiling a grammar that will be used to match strings multiple times.  Tokex.compile accepts two parameters:
 - grammar: (String) The grammar to compile.  This is very similar in concept to the pattern parameter passed to re.compile.
@@ -70,10 +70,10 @@ not-token ::= "_!" <anything> "_"
 ```
 
 ## Tokex Grammar Tokens
-Below is a description of each type of token that can be used to construct an Tokex grammar.
+Below is a description of each type of token that can be used to construct a Tokex grammar.
 #### General Notes
 - For `@name: ... @@`, `(name: ... )`, and `<name: ... >` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
-- To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, ``...``, `^...^`, `$...$`, `_!..._`
+- To escape ', ", \`, ^, $, \_ within `'...'`, `"..."`, `` `...` ``, `^...^`, `$...$`, `_!..._`
           respectively, use a `\`. Example: `_!one\_up_`
 - Comments can be included in grammars in a similar fashion to python by using hashtags.
 
@@ -86,9 +86,9 @@ Matches an input token exactly.
 `` `Literal Token` `` (case sensitive)  
 
 ##### Examples
-`'insert' 'into '`
-`"butterscotch" "pudding"`
-`` `CAPITAL` ``
+`'insert' 'into '`  
+`"butterscotch" "pudding"`  
+`` `CAPITAL` ``  
 
 ### Regular Expressions
 Matches a token if the `re` regular expression it contains matches it.
@@ -98,7 +98,7 @@ Matches a token if the `re` regular expression it contains matches it.
 `$Regular Expr$` (case sensitive)  
 
 ##### Examples
-`^(yes|no|maybe)^`
+`^(yes|no|maybe)^`  
 `$(FROM|From|from)$`
 
 ##### Convenience Regular Expressions
@@ -147,7 +147,7 @@ Specifies zero or one matches of the grammar it wraps.
 
 #### Zero Or More
 Specifies zero or more matches of the grammar it wraps.
-Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping name to a list of matches.
+Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping names to a list of matches.
 Named token matches outside of a named grammar will be grouped into a list of matches, while matches inside a named
 grammar will be grouped into a list of dictionaries of matches.
 
@@ -156,12 +156,14 @@ grammar will be grouped into a list of dictionaries of matches.
 
 ##### Examples
 ```
-'INSERT' 'INTO' <tableName: _notstr_> 'VALUES'
-((
-  (value:
-    '(' (( _ )) ') ','
-  )
-))
+Tokex.match("""
+    'INSERT' 'INTO' <tableName: _notstr_> 'VALUES'
+    ((
+        (value:
+            '(' (( _ )) ')'
+        )
+    ))
+    """, "INSERT INTO test VALUES (1, 2, 3), (4, 5, 6)")
 ```
 
 `(( <tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
