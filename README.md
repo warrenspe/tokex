@@ -159,7 +159,7 @@ grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
 `(* ... )`  
-`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`  
+`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`  
 
 ##### Examples
 ```
@@ -186,7 +186,7 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
 
 ##### Syntax
 `(+ ... )`  
-`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`  
+`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`  
 
 ##### Examples
 ```
