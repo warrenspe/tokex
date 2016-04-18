@@ -9,9 +9,15 @@ class TestGrammarConstruction(tests.TokexTestCase):
 
     def testTokenizeGrammar(self):
         grammarString = r"""
-            {{ 'a' 'b' 'c' }}
-            [[ 'd' 'e' 'f' ]]
-            (( 'g' 'h' 'i' ))
+            { 'a' 'b' 'c' }
+            (? 'd' 'e' 'f' )
+            (* 'g' 'h' 'i' )
+            (+ 'g' 'h' 'i' )
+            (?'d' 'e' 'f' )
+            (*'g' 'h' 'i' )
+            (+'g' 'h' 'i' )
+            (*'g' 'h' 'i' ['a'])
+            (+'g' 'h' 'i' [(b: 'b')])
             ( abc: 'abc' '123')
             (
              def: 'def' '456' )
@@ -62,9 +68,15 @@ class TestGrammarConstruction(tests.TokexTestCase):
         grammarTokens = Grammar._tokenizeGrammar(grammarString)
 
         self.assertEqual(grammarTokens, [
-            "{{", "'a'", "'b'", "'c'", "}}",
-            "[[", "'d'", "'e'", "'f'", "]]",
-            "((", "'g'", "'h'", "'i'", "))",
+            "{", "'a'", "'b'", "'c'", "}",
+            "(?", "'d'", "'e'", "'f'", ")",
+            "(*", "'g'", "'h'", "'i'", ")",
+            "(+", "'g'", "'h'", "'i'", ")",
+            "(?", "'d'", "'e'", "'f'", ")",
+            "(*", "'g'", "'h'", "'i'", ")",
+            "(+", "'g'", "'h'", "'i'", ")",
+            "(*", "'g'", "'h'", "'i'", "[", "'a'", "]", ")",
+            "(+", "'g'", "'h'", "'i'", "[", "(b:", "'b'", ")", "]", ")",
             "( abc:", "'abc'", "'123'", ")",
             "(\n             def:", "'def'", "'456'", ")",
             "(ghi:", "'ghi'", "'789'", ")",
@@ -178,6 +190,7 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "()")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, ",")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "<>")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "[]")
 
 
     def testParseNamedToken(self):
@@ -203,7 +216,7 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertEqual(grammar.tokens[2].token.regex.literal, '7<>8')
 
         self.assertIsInstance(grammar.tokens[3], Grammar.NamedToken)
-        self.assertTrue(grammar.tokens[3].token.regex.flags)
+        self.assertTrue(grammar.tokens[3].token.regex.flags & re.I)
         self.assertEqual(grammar.tokens[3].token.regex.pattern, '(?!><$).*$')
 
         self.assertIsInstance(grammar.tokens[4], Grammar.NamedToken)
@@ -242,7 +255,7 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertEqual(grammar.tokens[2].tokens[0].regex.literal, '7()8')
 
         self.assertIsInstance(grammar.tokens[3], Grammar.Grammar)
-        self.assertTrue(grammar.tokens[3].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[3].tokens[0].regex.flags & re.I)
         self.assertEqual(grammar.tokens[3].tokens[0].regex.pattern, '(?!)($).*$')
 
         self.assertIsInstance(grammar.tokens[4], Grammar.Grammar)
@@ -261,16 +274,17 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "mno: 'a')")
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, '("mno": "a")')
         self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "('mno': 'a')")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "('mno': 'a' ['b'])")
 
 
     def testParseZeroOrOne(self):
         grammar = Grammar.constructGrammar(r"""
-            [[
-              [[ 'a' "b" `c`]]
-              [[_ _str_ _notstr_ ]]
-              [[_!\_notstr\__]]
-              [[_!\_str\__]]
-            ]]
+            (?
+              (? 'a' "b" `c`)
+              (?_ _str_ _notstr_ )
+              (?_!\_notstr\__)
+              (?_!\_str\__)
+            )
         """)
 
         self.assertIsInstance(grammar.tokens[0], Grammar.ZeroOrOne)
@@ -293,35 +307,36 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[1], Grammar.Token)
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[2], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[0].regex.pattern, Grammar.Token.allToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[1].regex.pattern, Grammar.Token.strToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[2].regex.pattern, Grammar.Token.notStrToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags & re.I)
 
         self.assertIsInstance(grammar.tokens[0].tokens[2].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[2].tokens[0].regex.pattern, "(?!_notstr_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags & re.I)
 
         self.assertIsInstance(grammar.tokens[0].tokens[3].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[3].tokens[0].regex.pattern, "(?!_str_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags & re.I)
 
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "[[")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "]]")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "[[))]]")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "[[((]]))")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "[ [")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(?")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, ")")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(?))")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(?{)}")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "( ? 'a' )")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(? 'a' ['b'])")
 
 
     def testParseZeroOrMore(self):
         grammar = Grammar.constructGrammar(r"""
-            ((
-              (( 'a' "b" `c`))
-              ((_ _str_ _notstr_ ))
-              ((_!\_notstr\__))
-              ((_!\_str\__))
-            ))
+            (*
+              (* 'a' "b" `c`)
+              (*_ _str_ _notstr_ )
+              (* [<c:'c'>] _!\_notstr\__)
+              (*_!\_str\__ ['b'])
+            )
         """)
 
         self.assertIsInstance(grammar.tokens[0], Grammar.ZeroOrMore)
@@ -344,35 +359,98 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[1], Grammar.Token)
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[2], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[0].regex.pattern, Grammar.Token.allToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[1].regex.pattern, Grammar.Token.strToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[2].regex.pattern, Grammar.Token.notStrToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags & re.I)
 
         self.assertIsInstance(grammar.tokens[0].tokens[2].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[2].tokens[0].regex.pattern, "(?!_notstr_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags & re.I)
+        self.assertIsInstance(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0], Grammar.NamedToken)
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].token.regex.literal, "c")
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].name, "c")
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].token.regex.literal, "c")
 
         self.assertIsInstance(grammar.tokens[0].tokens[3].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[3].tokens[0].regex.pattern, "(?!_str_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags & re.I)
+        self.assertIsInstance(grammar.tokens[0].tokens[3].delimiterGrammar.tokens[0], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[3].delimiterGrammar.tokens[0].regex.literal, "b")
 
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "((")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "))")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "((]]))")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(([[))]]")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "( (")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(*")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, ")")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(*))")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(*(?})")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "( *")
+
+
+    def testParseOneOrMore(self):
+        grammar = Grammar.constructGrammar(r"""
+            (+
+              (+ 'a' "b" `c`)
+              (+_ _str_ _notstr_ )
+              (+ [<c:'c'>] _!\_notstr\__)
+              (+_!\_str\__ ['b'])
+            )
+        """)
+
+        self.assertIsInstance(grammar.tokens[0], Grammar.OneOrMore)
+        self.assertIsInstance(grammar.tokens[0].tokens[0], Grammar.OneOrMore)
+        self.assertIsInstance(grammar.tokens[0].tokens[1], Grammar.OneOrMore)
+        self.assertIsInstance(grammar.tokens[0].tokens[2], Grammar.OneOrMore)
+        self.assertIsInstance(grammar.tokens[0].tokens[3], Grammar.OneOrMore)
+
+        self.assertIsInstance(grammar.tokens[0].tokens[0].tokens[0], Grammar.Token)
+        self.assertIsInstance(grammar.tokens[0].tokens[0].tokens[1], Grammar.Token)
+        self.assertIsInstance(grammar.tokens[0].tokens[0].tokens[2], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[0].tokens[0].regex.literal, 'a')
+        self.assertFalse(grammar.tokens[0].tokens[0].tokens[0].regex.caseSensitive)
+        self.assertEqual(grammar.tokens[0].tokens[0].tokens[1].regex.literal, 'b')
+        self.assertFalse(grammar.tokens[0].tokens[0].tokens[1].regex.caseSensitive)
+        self.assertEqual(grammar.tokens[0].tokens[0].tokens[2].regex.literal, 'c')
+        self.assertTrue(grammar.tokens[0].tokens[0].tokens[2].regex.caseSensitive)
+
+        self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[0], Grammar.Token)
+        self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[1], Grammar.Token)
+        self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[2], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[1].tokens[0].regex.pattern, Grammar.Token.allToken.pattern)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags & re.I)
+        self.assertEqual(grammar.tokens[0].tokens[1].tokens[1].regex.pattern, Grammar.Token.strToken.pattern)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags & re.I)
+        self.assertEqual(grammar.tokens[0].tokens[1].tokens[2].regex.pattern, Grammar.Token.notStrToken.pattern)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags & re.I)
+
+        self.assertIsInstance(grammar.tokens[0].tokens[2].tokens[0], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[2].tokens[0].regex.pattern, "(?!_notstr_$).*$")
+        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags & re.I)
+        self.assertIsInstance(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0], Grammar.NamedToken)
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].token.regex.literal, "c")
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].name, "c")
+        self.assertEqual(grammar.tokens[0].tokens[2].delimiterGrammar.tokens[0].token.regex.literal, "c")
+
+        self.assertIsInstance(grammar.tokens[0].tokens[3].tokens[0], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[3].tokens[0].regex.pattern, "(?!_str_$).*$")
+        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags & re.I)
+        self.assertIsInstance(grammar.tokens[0].tokens[3].delimiterGrammar.tokens[0], Grammar.Token)
+        self.assertEqual(grammar.tokens[0].tokens[3].delimiterGrammar.tokens[0].regex.literal, "b")
+
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(+")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, ")")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(+))")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "(+(?})")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "( +")
 
 
     def testParseOneOfSet(self):
         grammar = Grammar.constructGrammar(r"""
-            {{
-              {{ 'a' "b" `c`}}
-              {{_ _str_ _notstr_ }}
-              {{_!\_notstr\__}}
-              {{_!\_str\__}}
-            }}
+            {
+              { 'a' "b" `c`}
+              {_ _str_ _notstr_ }
+              {_!\_notstr\__}
+              {_!\_str\__}
+            }
         """)
 
         self.assertIsInstance(grammar.tokens[0], Grammar.OneOfSet)
@@ -395,25 +473,25 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[1], Grammar.Token)
         self.assertIsInstance(grammar.tokens[0].tokens[1].tokens[2], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[0].regex.pattern, Grammar.Token.allToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[0].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[1].regex.pattern, Grammar.Token.strToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[1].regex.flags & re.I)
         self.assertEqual(grammar.tokens[0].tokens[1].tokens[2].regex.pattern, Grammar.Token.notStrToken.pattern)
-        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags)
+        self.assertFalse(grammar.tokens[0].tokens[1].tokens[2].regex.flags & re.I)
 
         self.assertIsInstance(grammar.tokens[0].tokens[2].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[2].tokens[0].regex.pattern, "(?!_notstr_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[2].tokens[0].regex.flags & re.I)
 
         self.assertIsInstance(grammar.tokens[0].tokens[3].tokens[0], Grammar.Token)
         self.assertEqual(grammar.tokens[0].tokens[3].tokens[0].regex.pattern, "(?!_str_$).*$")
-        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags)
+        self.assertTrue(grammar.tokens[0].tokens[3].tokens[0].regex.flags & re.I)
 
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{{")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "}}")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{{]]}}")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{{[[}}]]")
-        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{ {")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "}")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{)}")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{(?})")
+        self.assertRaises(Grammar.GrammarParsingError, Grammar.constructGrammar, "{'a' ['b']}")
 
 
     def testParseSubGrammarDefinitions(self):

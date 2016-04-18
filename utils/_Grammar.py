@@ -41,15 +41,16 @@ def _tokenizeGrammar(grammarString):
 
     grammarTokensPattern = "|".join((
         r"@\s*[\w-]+?\s*:",  # Defined Sub Grammar open
-        r"@\s*[\w-]*?\s*@",  # Defined Sub Grammar close
-        r"\{\{",             # One of Set open
-        r"\}\}",             # One of Set close
-        r"\(\(",             # Zero or More open
-        r"\)\)",             # Zero or More close
-        r"\[\[",             # Zero or One open
-        r"\]\]",             # Zero or One close
+        r"@\s*[\w-]*?\s*@",  # Defined Sub Grammar close & Usage
+        r"\{",               # One of Set open
+        r"\}",               # One of Set close
+        r"\[",               # Iterator Delimiter Open
+        r"\]",               # Iterator Delimiter Close
+        r"\(\*" ,            # Zero or More open
+        r"\(\?",             # Zero or One open
+        r"\(\+",             # One or More open
         r"\(\s*[\w-]+?\s*:", # Named Grammar open
-        r"\)",               # Named Grammar close
+        r"\)",               # Flow & Named Grammar close
         r"<\s*[\w-]+?\s*:",  # Named Token open
         r">",                # Named Token close
         r"_!.*?(?<!\\)_",    # Not Token Regex
@@ -74,7 +75,7 @@ def _tokenizeGrammar(grammarString):
     tokens = []
     try:
         while True:
-            match = iterator.next()
+            match = next(iterator)
             if 'nontoken' in match.groupdict() and match.groupdict()['nontoken'] is not None:
                 raise GrammarParsingError("Unknown token: %s" % match.groupdict()['nontoken'])
 
@@ -178,9 +179,10 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
     """
 
     stackOpenDict = {
-        "{{": OneOfSet,
-        "[[": ZeroOrOne,
-        "((": ZeroOrMore,
+        "{": OneOfSet,
+        "(?": ZeroOrOne,
+        "(*": ZeroOrMore,
+        "(+": OneOrMore,
     }
 
     stackNamingOpenDict = {
@@ -189,11 +191,10 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
     }
 
     stackCloseDict = {
-        "}}": OneOfSet,
-        "]]": ZeroOrOne,
-        "))": ZeroOrMore,
+        "}": OneOfSet,
+        ")": (ZeroOrOne, ZeroOrMore, OneOrMore, Grammar),
         ">": NamedToken,
-        ")": Grammar,
+        "]": MoreDelimiter,
     }
 
     grammar = Grammar()
@@ -232,6 +233,17 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
         # Singlular tokens
         elif token[0] in ("'", '"', '`', '^', '$', '_'):
             grammarStack[-1].append(Token(token))
+
+        # Iterator delimiters
+        elif token == "[":
+            # Ensure that the token preceeding us is a OneOrMore or a ZeroOrMore
+            if not isinstance(grammarStack[-1], (ZeroOrMore, OneOrMore)):
+                error = "Iteration delimiter must be applied to a (* ) or (+ ) block, not %s" % grammarStack[-1]
+                raise GrammarParsingError(error)
+
+            obj = MoreDelimiter()
+            grammarStack[-1].delimiterGrammar = obj
+            grammarStack.append(obj)
 
         else:
             raise GrammarParsingError("Unknown token: %s" % repr(token))
@@ -278,6 +290,10 @@ class Grammar(_TokexGrammar):
 
     def __init__(self):
         self.tokens = list()
+
+
+    def __repr__(self):
+        return "<%s: %s>" % (self.__class__.__name__, [repr(t) for t in self.tokens])
 
 
     def append(self, item):
@@ -351,6 +367,9 @@ class Token(_TokexGrammar):
             raise GrammarParsingError("Unknown token type: %s." % grammarToken)
 
 
+    def __repr__(self):
+        return self.regex.literal if isinstance(self.regex, Token.LiteralMatcher) else self.regex.pattern
+
 
     def match(self, stringTokens, idx):
         # If the index we're considering is beyond the end of our tokens, we have nothing to match on. Return False.
@@ -368,6 +387,9 @@ class Token(_TokexGrammar):
 class NamedToken(_TokexGrammar):
     name = None
     token = None
+
+    def __repr__(self):
+        return "<NamedToken: %s>" % repr(self.token)
 
     def append(self, item):
         if self.token is not None:
@@ -399,28 +421,59 @@ class ZeroOrOne(Grammar):
         return True, newIdx or idx, (None if output is None else output[self.name])
 
 
+class MoreDelimiter(Grammar):
+    """
+    Class which can be applied to a (* ) or (+ ) block to define a grammar which must be present between matches.
+    """
+
+    name = '__MoreDelimiterNameSpace'
+
+
 class ZeroOrMore(Grammar):
 
     name = '__ZeroOrMoreNameSpace'
+    delimiterGrammar = None
+    matchCount = 0 # Convenience attribute for implementing OneOrMore; reset on each call to match
+
+    def _updateOutputLists(self, dictToUpdateWith, defaultDictToUpdate):
+        for key in dictToUpdateWith:
+            defaultDictToUpdate[key].append(dictToUpdateWith[key])
+
 
     def match(self, stringTokens, idx):
-        outputs = []
+        self.matchCount = 0
+        outputs = collections.defaultdict(list)
         while idx < len(stringTokens):
-            match, newIdx, output = super(ZeroOrMore, self).match(stringTokens, idx)
+            match, newIdx, output = Grammar.match(self, stringTokens, idx)
 
             if not match or idx == newIdx:
                 break
 
             idx = newIdx
-            if output is not None:
-                outputs.append(output[self.name])
+            self.matchCount += 1
+            if output:
+                self._updateOutputLists(output[self.name], outputs)
 
-        returnOutputs = collections.defaultdict(list)
-        for output in outputs:
-            for key, val in output.items():
-                returnOutputs[key].append(val)
+            if self.delimiterGrammar is not None and idx < len(stringTokens):
+                match, newIdx, output = self.delimiterGrammar.match(stringTokens, idx)
+                if not match or idx == newIdx:
+                    break
 
-        return True, idx, dict(returnOutputs) or None
+                idx = newIdx
+                if output:
+                    self._updateOutputLists(output[self.delimiterGrammar.name], outputs)
+
+        return True, idx, dict(outputs) or None
+
+
+class OneOrMore(ZeroOrMore):
+
+    name = '__OneOrMoreNameSpace'
+
+    def match(self, stringTokens, idx):
+        _, newIdx, output = ZeroOrMore.match(self, stringTokens, idx)
+
+        return self.matchCount > 0, newIdx, output
 
 
 class OneOfSet(Grammar):

@@ -128,33 +128,31 @@ class TestGrammarParsing(tests.TokexTestCase):
 
     def testParseZeroOrOne(self):
         grammar = """
-            [[
-                'a'
-            ]]
-            [[
+            (?'a')
+            (?
                 <b: 'b'>
-            ]]
-            [[
+            )
+            (?
                 (c: <c: 'c'>)
-            ]]
-            [[
-                [[
-                    [[
-                        [[
+            )
+            (?
+                (?
+                    (?
+                        (?
                             <d: 'd'>
-                        ]]
-                    ]]
-                ]]
-            ]]
-            [[
-                [[
-                    [[
-                        [[
+                        )
+                    )
+                )
+            )
+            (?
+                (?
+                    (?
+                        (?
                             (e:<e: 'e'>)
-                        ]]
-                    ]]
-                ]]
-            ]]
+                        )
+                    )
+                )
+            )
         """
 
         zeroOrOneGrammar = Tokex.compile(grammar)
@@ -199,38 +197,39 @@ class TestGrammarParsing(tests.TokexTestCase):
         self.assertIsNone(zeroOrOneGrammar.match('a b c d e f'))
         self.assertIsNone(zeroOrOneGrammar.match('a b c g e f'))
 
+
     def testParseZeroOrMore(self):
         grammar = """
-            ((
+            (*
                 'a'
-            ))
-            ((
+            )
+            (*
                 <b: 'b'>
-            ))
-            ((
+            )
+            (*
                 (c:
                    <c2: 'c2'>
                    <c3: 'c3'>
                 )
-            ))
-            ((
-                ((
-                    ((
-                        ((
+            )
+            (*
+                (*
+                    (*
+                        (*
                             <d: 'd'>
-                        ))
-                    ))
-                ))
-            ))
-            ((
-                ((
-                    ((
-                        ((
+                        )
+                    )
+                )
+            )
+            (*
+                (*
+                    (*
+                        (*
                             (e:<e: 'e'>)
-                        ))
-                    ))
-                ))
-            ))
+                        )
+                    )
+                )
+            )
         """
 
         zeroOrMoreGrammar = Tokex.compile(grammar)
@@ -295,17 +294,108 @@ class TestGrammarParsing(tests.TokexTestCase):
         self.assertIsNone(zeroOrMoreGrammar.match('a b c d e f'))
         self.assertIsNone(zeroOrMoreGrammar.match('a b c g e f'))
 
+
+        grammar = """
+            (*
+                <a:'a'> [<b:'b'>]
+            )
+        """
+
+        zeroOrMoreGrammar = Tokex.compile(grammar)
+
+        self.assertDictEqual(zeroOrMoreGrammar.match('a'), {'a': ['a']})
+        self.assertDictEqual(zeroOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertDictEqual(zeroOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
+        self.assertDictEqual(zeroOrMoreGrammar.match('a b a b'), {'a': ['a', 'a'], 'b': ['b', 'b']})
+
+        self.assertIsNone(zeroOrMoreGrammar.match('a a'))
+
+
+    def testParseOneOrMore(self):
+        grammar = """
+            (+
+                'a'
+            )
+            (+
+                <b: 'b'>
+            )
+            (+
+                (c:
+                   <c2: 'c2'>
+                   <c3: 'c3'>
+                )
+            )
+            (+
+                (+
+                    (+
+                        (+
+                            <d: 'd'>
+                        )
+                    )
+                )
+            )
+            (+
+                (+
+                    (+
+                        (+
+                            (e:<e: 'e'>)
+                        )
+                    )
+                )
+            )
+        """
+
+        oneOrMoreGrammar = Tokex.compile(grammar)
+
+        self.assertDictEqual(oneOrMoreGrammar.match('a b c2 c3 d e'), {
+            'b': ['b'],
+            'c': [{'c2': 'c2', 'c3': 'c3'}],
+            'd': [[[['d']]]],
+            'e': [[[[{'e': 'e'}]]]]
+        })
+
+
+        grammar = "(+ <a:'a'> [<b:'b'>])"
+
+        oneOrMoreGrammar = Tokex.compile(grammar)
+
+        self.assertDictEqual(oneOrMoreGrammar.match('a'), {'a': ['a']})
+        self.assertDictEqual(oneOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertDictEqual(oneOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
+
+        self.assertIsNone(oneOrMoreGrammar.match(''), {})
+        self.assertIsNone(oneOrMoreGrammar.match('f'))
+        self.assertIsNone(oneOrMoreGrammar.match('b'))
+        self.assertIsNone(oneOrMoreGrammar.match('a a'))
+
+
+        grammar = """
+            (+
+                <a:'a'> [<b:'b'>]
+            )
+        """
+
+        oneOrMoreGrammar = Tokex.compile(grammar)
+
+        self.assertDictEqual(oneOrMoreGrammar.match('a'), {'a': ['a']})
+        self.assertDictEqual(oneOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertDictEqual(oneOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
+        self.assertDictEqual(oneOrMoreGrammar.match('a b a b'), {'a': ['a', 'a'], 'b': ['b', 'b']})
+
+        self.assertIsNone(oneOrMoreGrammar.match('a a'))
+
+
     def testParseOneOfSet(self):
         grammar = """
-            {{
+            {
                 <a:'a'>
                 (b: <b1:'b1'> 'b2')
-                {{
+                {
                     <c:'c'>
                     'd'
                     'e'
-                }}
-            }}
+                }
+            }
         """
 
         oneOfSetGrammar = Tokex.compile(grammar)
@@ -322,17 +412,17 @@ class TestGrammarParsing(tests.TokexTestCase):
         self.assertIsNone(oneOfSetGrammar.match('b2'))
 
         grammar = """
-            ((
-                {{
+            (*
+                {
                     <a:'a'>
                     (b: <b1:'b1'> <b2:'b2'>)
-                    {{
+                    {
                         <c:'c'>
                         'd'
                         'e'
-                    }}
-                }}
-            ))
+                    }
+                }
+            )
         """
 
         oneOfSetGrammar = Tokex.compile(grammar)

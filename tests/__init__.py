@@ -30,7 +30,8 @@ def runSelective(testFiles, verbosity):
 
 def _runSuite(testSuite, verbosity):
     unittest.TextTestRunner(verbosity=verbosity).run(testSuite)
-    raw_input("\nPress enter to close.")
+    sys.stdout.write("\nPress enter to close.")
+    sys.stdin.readline()
 
 def main():
     parser = argparse.ArgumentParser(description="Execute Tokex Unit Tests")
