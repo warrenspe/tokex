@@ -443,27 +443,35 @@ class ZeroOrMore(Grammar):
     def match(self, stringTokens, idx):
         self.matchCount = 0
         outputs = collections.defaultdict(list)
-        while idx < len(stringTokens):
-            match, newIdx, output = Grammar.match(self, stringTokens, idx)
+        currentIdx = idx
 
-            if not match or idx == newIdx:
+        while idx < len(stringTokens):
+            currentIdx = idx
+            delimiterOutput = None
+
+            # If we're not processing the first match, check that any delimiter grammar we may have matches before
+            # the next occurance of our grammar
+            if self.matchCount > 0 and self.delimiterGrammar is not None:
+                match, idx, delimiterOutput = self.delimiterGrammar.match(stringTokens, idx)
+
+                if not match:
+                    break
+
+            match, idx, output = Grammar.match(self, stringTokens, idx)
+
+            if not match or idx == currentIdx:
                 break
 
-            idx = newIdx
+            currentIdx = idx
             self.matchCount += 1
+
             if output:
                 self._updateOutputLists(output[self.name], outputs)
 
-            if self.delimiterGrammar is not None and idx < len(stringTokens):
-                match, newIdx, output = self.delimiterGrammar.match(stringTokens, idx)
-                if not match or idx == newIdx:
-                    break
+            if delimiterOutput:
+                self._updateOutputLists(delimiterOutput[self.delimiterGrammar.name], outputs)
 
-                idx = newIdx
-                if output:
-                    self._updateOutputLists(output[self.delimiterGrammar.name], outputs)
-
-        return True, idx, dict(outputs) or None
+        return True, currentIdx, dict(outputs) or None
 
 
 class OneOrMore(ZeroOrMore):

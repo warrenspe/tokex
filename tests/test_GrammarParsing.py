@@ -304,10 +304,10 @@ class TestGrammarParsing(tests.TokexTestCase):
         zeroOrMoreGrammar = Tokex.compile(grammar)
 
         self.assertDictEqual(zeroOrMoreGrammar.match('a'), {'a': ['a']})
-        self.assertDictEqual(zeroOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertIsNone(zeroOrMoreGrammar.match('a b'))
         self.assertDictEqual(zeroOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
-        self.assertDictEqual(zeroOrMoreGrammar.match('a b a b'), {'a': ['a', 'a'], 'b': ['b', 'b']})
-
+        self.assertIsNone(zeroOrMoreGrammar.match('a b a b'))
+        self.assertIsNone(zeroOrMoreGrammar.match('b'))
         self.assertIsNone(zeroOrMoreGrammar.match('a a'))
 
 
@@ -360,11 +360,15 @@ class TestGrammarParsing(tests.TokexTestCase):
         oneOrMoreGrammar = Tokex.compile(grammar)
 
         self.assertDictEqual(oneOrMoreGrammar.match('a'), {'a': ['a']})
-        self.assertDictEqual(oneOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertIsNone(oneOrMoreGrammar.match('a b'))
         self.assertDictEqual(oneOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
 
         self.assertIsNone(oneOrMoreGrammar.match(''), {})
         self.assertIsNone(oneOrMoreGrammar.match('f'))
+        self.assertIsNone(oneOrMoreGrammar.match('b'))
+        self.assertIsNone(oneOrMoreGrammar.match('a a'))
+        self.assertIsNone(oneOrMoreGrammar.match('a b'))
+        self.assertIsNone(oneOrMoreGrammar.match('a b a b'))
         self.assertIsNone(oneOrMoreGrammar.match('b'))
         self.assertIsNone(oneOrMoreGrammar.match('a a'))
 
@@ -378,11 +382,12 @@ class TestGrammarParsing(tests.TokexTestCase):
         oneOrMoreGrammar = Tokex.compile(grammar)
 
         self.assertDictEqual(oneOrMoreGrammar.match('a'), {'a': ['a']})
-        self.assertDictEqual(oneOrMoreGrammar.match('a b'), {'a': ['a'], 'b': ['b']})
+        self.assertIsNone(oneOrMoreGrammar.match('a b'))
         self.assertDictEqual(oneOrMoreGrammar.match('a b a'), {'a': ['a', 'a'], 'b': ['b']})
-        self.assertDictEqual(oneOrMoreGrammar.match('a b a b'), {'a': ['a', 'a'], 'b': ['b', 'b']})
+        self.assertIsNone(oneOrMoreGrammar.match('a b a b'))
 
         self.assertIsNone(oneOrMoreGrammar.match('a a'))
+        self.assertIsNone(oneOrMoreGrammar.match('b'))
 
 
     def testParseOneOfSet(self):
