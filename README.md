@@ -158,8 +158,8 @@ Named token matches outside of a named grammar will be grouped into a list of ma
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(* ... )`
-`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`
+`(* ... )`  
+`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`  
 
 ##### Examples
 ```
@@ -185,8 +185,8 @@ grammar will be grouped into a list of dictionaries of matches.
 Specifies one or more matches of the grammar it wraps. Essentially the same as a zero or more block in every other aspect.
 
 ##### Syntax
-`(+ ... )`
-`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`
+`(+ ... )`  
+`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`  
 
 ##### Examples
 ```
@@ -200,7 +200,7 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
                 (columnDefs: <columnName: _!index_> <columnType: _> ) [',']
             )
             (*
-                ',' 'INDEX' <indexedColumnName: _>
+                ',' 'INDEX' <indexedColumnNames: _>
             )
             ")"
         )
@@ -209,10 +209,12 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
 
 >>> createTokex.match("CREATE database test")
 {'database': {'name': 'test'}}
+
 >>> createTokex.match("""
         CREATE TABLE testTable (
             colA int,
-            colB char
+            colB char,
+            index colA
         )
     """)
 
@@ -222,7 +224,9 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
         {'columnName': 'colA', 'columnType': 'int'},
         {'columnName': 'colB', 'columnType': 'char'}
     ],
+    'indexedColumnNames': ['colA'],
 }}
+
 ```
 
 #### One of Set
@@ -230,7 +234,7 @@ Specifies that one grammar of the set of grammars it contains should match the i
 Will attempt to match each grammar it contains with the string until one matches in its entirety.
 
 ##### Syntax
-`{{ ... }}`
+`{ ... }`
 
 ##### Examples
 Match one grammar of a set, zero or many times:
