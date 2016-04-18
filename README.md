@@ -1,5 +1,5 @@
 # Tokex
-A Python structured string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
+A Python string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 ## Why Tokex?
 Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between the two is that re is focused on matching characters while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar which can result in fewer bugs than if it were written as a re pattern, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.  Finally, Tokex allows for Python style comments to be inserted directly into the grammar.
@@ -132,10 +132,13 @@ token within the grammar cannot match a token, the grammar will not match the in
 `(name: ...)`
 
 ##### Examples
-`(test: 'a' <middle: _> 'c')`  
-Matches: `"a b c"`  
-Does not match: `"a b"`  
-Returns: `{'test': {'middle': 'b'}}`  
+```
+>>> namedGrammarTokex = Tokex.compile("(test: 'a' <middle: _> 'c')")
+>>> namedGrammarTokex.match("a b c")
+{'test': {'middle': 'b'}}
+>>> namedGrammarTokex.match("a b") is None
+True
+```
 
 ### Flow
 
@@ -150,7 +153,7 @@ Specifies zero or one matches of the grammar it wraps.
 
 #### Zero Or More
 Specifies zero or more matches of the grammar it wraps.
-Named grammars & named tokens wrapped by Zero Or More brackets will be returned as a dictionary, mapping names to a list of matches.
+Named grammars & named tokens wrapped by zero or more brackets will be returned as a dictionary, mapping names to a list of matches.
 Named token matches outside of a named grammar will be grouped into a list of matches, while matches inside a named
 grammar will be grouped into a list of dictionaries of matches.
 
@@ -194,7 +197,7 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
         (table:
             'TABLE' <name: _> "("
             (+
-                <columnName: _!index_> <columnType: _> [',']
+                (columnDefs: <columnName: _!index_> <columnType: _> ) [',']
             )
             (*
                 ',' 'INDEX' <indexedColumnName: _>
@@ -203,16 +206,23 @@ Specifies one or more matches of the grammar it wraps. Essentially the same as a
         )
     }
     """)
+
 >>> createTokex.match("CREATE database test")
 {'database': {'name': 'test'}}
 >>> createTokex.match("""
-    CREATE TABLE testTable (
-        colA int,
-        colB char
-    )
+        CREATE TABLE testTable (
+            colA int,
+            colB char
+        )
     """)
-    
 
+{'table': {
+    'name': 'testTable'
+    'columnDefs': [
+        {'columnName': 'colA', 'columnType': 'int'},
+        {'columnName': 'colB', 'columnType': 'char'}
+    ],
+}}
 ```
 
 #### One of Set
@@ -225,16 +235,28 @@ Will attempt to match each grammar it contains with the string until one matches
 ##### Examples
 Match one grammar of a set, zero or many times:
 ```
-'ALTER' 'TABLE' <tableName: _notstr_>
-((
-  {{
-    (addColumn: 'add' 'column' <name: _> <type: _>)
-    (removeColumn: 'remove' 'column' <name: _>)
-    (modifyColumn: 'modify' 'column' <name: _> <newName: _> <newType: _>)
-    (addIndex: 'add' 'index' <column: _>)
-    (removeIndex: 'remove' 'index' <column: _>)
-  }}
-))
+>>> alterTokex = Tokex.compile("""
+    'ALTER' 'TABLE' <tableName: _>
+    (*
+        {
+            (addColumn: 'add' 'column' <name: _> <type: _>)
+            (removeColumn: 'remove' 'column' <name: _>)
+            (modifyColumn: 'modify' 'column' <name: _> <newName: _> <newType: _>)
+            (addIndex: 'add' 'index' <column: _>)
+            (removeIndex: 'remove' 'index' <column: _>)
+        } [',']
+    )""")
+>>> alterTokex.match("""
+    ALTER TABLE test
+    ADD COLUMN a int,
+    REMOVE COLUMN a_old,
+    REMOVE INDEX a_old
+    """)
+{'addColumn': [{'name': 'a', 'type': 'int'}],
+ 'removeColumn': [{'name': 'a_old'}],
+ 'removeIndex': [{'column': 'a_old'}],
+ 'tableName': 'test'}
+
 ```
 
 ### Sub Grammar
