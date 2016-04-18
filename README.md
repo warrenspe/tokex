@@ -27,8 +27,8 @@ The following examples will show parsing of tokens in simplified SQL queries
 ## Notes
 By default, input strings will be tokenized based on the following rules, in the following order of precedence:
 
-All occurrances of "[^"]*" or '[^']*' are broken up into their own tokens
-All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)
+All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens  
+All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)  
 All other non-white space characters are broken up into their own 1-character tokens.
 
 The tokenizing behavior can be modified by updating the attribute `tokenizerRegexes` of a compiled grammar.  This attribute refers to a list of strings that are joined using "|" and passed to the `re.findall` function to tokenize the query.  As an example:  
@@ -47,10 +47,13 @@ name-quantifier ::= <named-token> | <named-grammar>
 named-token ::= "<" <name> ": " <token> ">"
 named-grammar ::= "(" <name> ": " <grammar> ")"
 
-flow-quantifier ::= <zero-or-one> | <zero-or-more> | <one-of-set>
-zero-or-one ::= "[[" <grammar> "]]"
-zero-or-more ::= "((" <grammar> "))"
-one-of-set ::= "{{" <grammar> "}}"
+flow-quantifier ::= <zero-or-one> | <zero-or-more> | <one-or-more> | <one-of-set>
+zero-or-one ::= "(?" <grammar> | <delimiter-grammar> ")"
+zero-or-more ::= "(*" <grammar> | <delimiter-grammar> ")"
+one-or-more ::= "(+" <grammar> ")"
+one-of-set ::= "{" <grammar> "}"
+
+delimiter-grammar ::= "" | "[" <grammar> "]"
 
 comment ::= "#" <anything> "\n" | "#" <anything> "EOF"
 
@@ -140,10 +143,10 @@ Returns: `{'test': {'middle': 'b'}}`
 Specifies zero or one matches of the grammar it wraps.
 
 ##### Syntax
-`[[ ... ]]`
+`(? ... )`
 
 ##### Examples
-`'DROP' 'TABLE' [[<ifExists: 'IF'> 'EXISTS']] <tableName: _notstr_>`
+`'DROP' 'TABLE' (? <ifExists: 'IF'> 'EXISTS' ) <tableName: _notstr_>`
 
 #### Zero Or More
 Specifies zero or more matches of the grammar it wraps.
@@ -152,27 +155,64 @@ Named token matches outside of a named grammar will be grouped into a list of ma
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(( ... ))`
+`(* ... )`
+`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`
 
 ##### Examples
 ```
-Tokex.match("""
+>>> Tokex.match("""
     'INSERT' 'INTO' <tableName: _notstr_> 'VALUES'
-    ((
-        (value:
-            '(' (( <val:_!\)_> )) ')' [[',']]
-        )
-    ))
+    (*
+        (values:
+            '(' (* <val:_> [','] ) ')'
+        ) [',']
+    )
     """, "INSERT INTO test VALUES (1, 2, 3), (4, 5, 6)")
+
+{
+    'tableName': 'test',
+    'values': [
+        {'val': ['1', '2', '3']},
+        {'val': ['4', '5', '6']}
+    ]
+}
 ```
 
-`(( <tok: 'a'> (gram: <b: 'b'> <c: 'c'>) ))` parsing: `'a b c a b c'`  
-=>
+#### One Or More
+Specifies one or more matches of the grammar it wraps. Essentially the same as a zero or more block in every other aspect.
+
+##### Syntax
+`(+ ... )`
+`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* ... )`
+
+##### Examples
 ```
-{
-    'tok': ['a', 'a'],
-    'gram': [{'b': 'b', 'c': 'c'}, {'b': 'b', 'c': 'c'}]
-}
+>>> createTokex = Tokex.compile("""
+    'CREATE'
+    {
+        (database: 'DATABASE' <name: _>)
+        (table:
+            'TABLE' <name: _> "("
+            (+
+                <columnName: _!index_> <columnType: _> [',']
+            )
+            (*
+                ',' 'INDEX' <indexedColumnName: _>
+            )
+            ")"
+        )
+    }
+    """)
+>>> createTokex.match("CREATE database test")
+{'database': {'name': 'test'}}
+>>> createTokex.match("""
+    CREATE TABLE testTable (
+        colA int,
+        colB char
+    )
+    """)
+    
+
 ```
 
 #### One of Set
