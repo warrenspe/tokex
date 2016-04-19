@@ -20,8 +20,86 @@ Tokex attempts to emulates re in its usage by offering two functions, compile an
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
 
+**Drop Query**
+```
+>>> import Tokex
+>>> dropTokex = Tokex.compile("""
+    'DROP'
+    <target: ^table|database^>
+    (? <ifExists: 'IF'> 'EXISTS' )
+    <name: _>""")
+
+>>> dropTokex.match("DROP DATABASE testDatabase")
+{'target': 'DATABASE', 'name': 'testDatabase'}
+
+>>> dropTokex.match("DROP TABLE IF EXISTS testTable")
+{'target': 'TABLE', 'name': 'testTable', 'ifExists': 'IF'}
 ```
 
+**Update Query**
+```
+>>> updateTokex = Tokex.compile("""
+    'UPDATE' <tableName: _> "SET"
+    (+
+        (columnSets: <columnToSet: _> "=" <value: _>) [',']
+    )
+    (? 'WHERE' (+ <whereClause: _!ORDER|LIMIT_> ) )
+    (? 'ORDER' 'BY' <orderByColumn: _> <orderByDirection: ^ASC|DESC^> )
+    (? 'LIMIT' <limit: ^\d+^> )""")
+
+>>> updateTokex.match("UPDATE test SET a=1, b=2, c = 3 WHERE a > 0 AND b = 2 ORDER BY c DESC limit 1")
+{
+    'tableName': 'test',
+    'columnSets': [{'columnToSet': 'a', 'value': '1'},
+                   {'columnToSet': 'b', 'value': '2'},
+                   {'columnToSet': 'c', 'value': '3'}],
+    'whereClause': ['a', '>', '0', 'AND', 'b', '=', '2'],
+    'orderByColumn': 'c',
+    'orderByDirection': 'DESC',
+    'limit': '1'
+}
+
+>>> updateTokex.match("UPDATE test SET a=1 LIMIT 1")
+{
+    'tableName': 'test',
+    'columnSets': [{'columnToSet': 'a', 'value': '1'}],
+    'limit': '1'
+}
+```
+
+**Select Query**
+```
+>>> selectTokex = Tokex.compile("""
+    @joinCondition:
+        (+ <condition: _!INNER|LEFT|WHERE|ORDER|LIMIT_> )
+    @@
+    @whereCondition:
+        (+ <whereCondition: _!ORDER|LIMIT_> )
+    @@
+
+    'SELECT' (? <distinct: "DISTINCT"> )
+        (+ <selectAttributes: _!from_> [','] )
+    'FROM' <fromTable: _>
+    (*
+        (innerJoins: "INNER" "JOIN" <tableName: _> "ON" @joinCondition@ )
+        (leftJoins: "LEFT" "JOIN" <tableName: _> "ON" @joinCondition@ )
+    )
+    (? "WHERE" @whereCondition@ )
+    (? "ORDER" "BY" <orderByColumn: _> <orderByDirection: ^ASC|DESC^> )
+    (? "LIMIT" <limit: ^\d+^> )""")
+
+>>> selectTokex.match("SELECT * FROM test limit 1")
+{'fromTable': 'test', 'selectAttributes': ['*'], 'limit': '1'}
+
+>>> selectTokex.match("SELECT a, b, c from testTable where a > 1 and b < 2 ORDER BY a DESC limit 2")
+{
+    'selectAttributes': ['a', 'b', 'c'],
+    'fromTable': 'testTable',
+    'whereCondition': ['a', '>', '1', 'and', 'b', '<', '2'],
+    'orderByColumn': 'a',
+    'orderByDirection': 'DESC',
+    'limit': '2'
+}
 ```
 
 ## Notes
