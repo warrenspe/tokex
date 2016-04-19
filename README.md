@@ -137,7 +137,7 @@ True
 
   This 'feature' will be getting reworked in a future version.
 
-- To debug why a grammar matches/doesn't match a particular input string, set Tokex.DEBUG = True before calling match on the input string.  Detailed debugging information will be written to STDERR.
+- To debug why a grammar matches/doesn't match a particular input string, set `Tokex.DEBUG = True` before calling match on the input string.  Detailed debugging information will be written to STDERR.
 
 ## Defining a Grammar.
 Below is a BNF representation of a Tokex compatible grammar.
