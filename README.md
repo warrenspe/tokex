@@ -33,7 +33,10 @@ The following examples will show parsing of tokens in simplified SQL queries
 {'target': 'DATABASE', 'name': 'testDatabase'}
 
 >>> dropTokex.match("DROP TABLE IF EXISTS testTable")
-{'target': 'TABLE', 'name': 'testTable', 'ifExists': 'IF'}
+{'target': 'TABLE', 'ifExists': 'IF', 'name': 'testTable'}
+
+>>> dropTokex.match("DROP testTable") is None # Missing DATABASE or TABLE token
+True
 ```
 
 **Update Query**
@@ -65,6 +68,9 @@ The following examples will show parsing of tokens in simplified SQL queries
     'columnSets': [{'columnToSet': 'a', 'value': '1'}],
     'limit': '1'
 }
+
+>>> updateTokex.match("UPDATE testTable SET WHERE a > 1") is None # Missing a column to set
+True
 ```
 
 **Select Query**
@@ -81,8 +87,10 @@ The following examples will show parsing of tokens in simplified SQL queries
         (+ <selectAttributes: _!from_> [','] )
     'FROM' <fromTable: _>
     (*
-        (innerJoins: "INNER" "JOIN" <tableName: _> "ON" @joinCondition@ )
-        (leftJoins: "LEFT" "JOIN" <tableName: _> "ON" @joinCondition@ )
+        {
+            (innerJoins: "INNER" "JOIN" <tableName: _> "ON" @joinCondition@ )
+            (leftJoins: "LEFT" "JOIN" <tableName: _> "ON" @joinCondition@ )
+        }
     )
     (? "WHERE" @whereCondition@ )
     (? "ORDER" "BY" <orderByColumn: _> <orderByDirection: ^ASC|DESC^> )
@@ -91,15 +99,29 @@ The following examples will show parsing of tokens in simplified SQL queries
 >>> selectTokex.match("SELECT * FROM test limit 1")
 {'fromTable': 'test', 'selectAttributes': ['*'], 'limit': '1'}
 
->>> selectTokex.match("SELECT a, b, c from testTable where a > 1 and b < 2 ORDER BY a DESC limit 2")
+>>> selectTokex.match("""
+    SELECT a, b, c
+    FROM testTable
+    INNER JOIN a ON a = t
+    INNER JOIN b ON b = a
+    LEFT JOIN c ON c = a
+    WHERE a > 1 AND b < 2
+    ORDER BY a DESC
+    LIMIT 2""")
 {
     'selectAttributes': ['a', 'b', 'c'],
     'fromTable': 'testTable',
-    'whereCondition': ['a', '>', '1', 'and', 'b', '<', '2'],
+    'innerJoins': [{'condition': ['a', '=', 't'], 'tableName': 'a'},
+                   {'condition': ['b', '=', 'a'], 'tableName': 'b'}],
+    'leftJoins': [{'condition': ['c', '=', 'a'], 'tableName': 'c'}],
+    'whereCondition': ['a', '>', '1', 'AND', 'b', '<', '2'],
     'orderByColumn': 'a',
     'orderByDirection': 'DESC',
     'limit': '2'
 }
+
+>>> selectTokex.match("SELECT FROM test") is None # Missing select columns
+True
 ```
 
 ## Notes
