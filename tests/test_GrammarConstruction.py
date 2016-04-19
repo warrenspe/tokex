@@ -130,19 +130,19 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertEqual(grammar.tokens[5].regex.literal, 'i j k')
 
         self.assertIsInstance(grammar.tokens[6].regex, re._pattern_type)
-        self.assertFalse(grammar.tokens[6].regex.flags & re.I)
+        self.assertTrue(grammar.tokens[6].regex.flags & re.I)
         self.assertEqual(grammar.tokens[6].regex.pattern, 'l')
 
         self.assertIsInstance(grammar.tokens[7].regex, re._pattern_type)
-        self.assertFalse(grammar.tokens[7].regex.flags & re.I)
+        self.assertTrue(grammar.tokens[7].regex.flags & re.I)
         self.assertEqual(grammar.tokens[7].regex.pattern, 'm n o')
 
         self.assertIsInstance(grammar.tokens[8].regex, re._pattern_type)
-        self.assertTrue(grammar.tokens[8].regex.flags & re.I)
+        self.assertFalse(grammar.tokens[8].regex.flags & re.I)
         self.assertEqual(grammar.tokens[8].regex.pattern, 'p')
 
         self.assertIsInstance(grammar.tokens[9].regex, re._pattern_type)
-        self.assertTrue(grammar.tokens[9].regex.flags & re.I)
+        self.assertFalse(grammar.tokens[9].regex.flags & re.I)
         self.assertEqual(grammar.tokens[9].regex.pattern, 'q r s')
 
         self.assertIsInstance(grammar.tokens[10].regex, grammar.tokens[10].LiteralMatcher)
@@ -158,11 +158,11 @@ class TestGrammarConstruction(tests.TokexTestCase):
         self.assertEqual(grammar.tokens[12].regex.literal, 'e`\'"^$f')
 
         self.assertIsInstance(grammar.tokens[13].regex, re._pattern_type)
-        self.assertFalse(grammar.tokens[13].regex.flags & re.I)
+        self.assertTrue(grammar.tokens[13].regex.flags & re.I)
         self.assertEqual(grammar.tokens[13].regex.pattern, 'g`\'"^$h')
 
         self.assertIsInstance(grammar.tokens[14].regex, re._pattern_type)
-        self.assertTrue(grammar.tokens[14].regex.flags & re.I)
+        self.assertFalse(grammar.tokens[14].regex.flags & re.I)
         self.assertEqual(grammar.tokens[14].regex.pattern, 'i`\'"$^j')
 
     def testParseComment(self):

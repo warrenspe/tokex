@@ -19,7 +19,10 @@
 """
 
 # Standard imports
-import re, collections
+import re, collections, sys, functools
+
+# GLOBALS
+DEBUG = False # If True, will print matching info to sys.stderr during a match
 
 ###
 # Custom exceptions
@@ -260,6 +263,35 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
 
 class _TokexGrammar(object):
 
+    def __init__(self, *args, **kwargs):
+        self.match = self._matchWrapper(self.match)
+
+
+    def _matchWrapper(self, matchFunction):
+        """
+        Function wrapper which takes a match function and wraps it in another function to perform additional
+        functionality when matching.
+        """
+
+        @functools.wraps(matchFunction)
+        def matchWrapper(stringTokens, idx):
+            if DEBUG:
+                sys.stderr.write("\nvvvvvvvvvv\n")
+                sys.stderr.write("Current Token: %s\n\nMATCHING: %s\n" % (self, stringTokens[idx]))
+                sys.stderr.flush()
+
+            match, idx, output = matchFunction(stringTokens, idx)
+
+            if DEBUG:
+                sys.stderr.write("Matched: %s\n" % match)
+                sys.stderr.write("^^^^^^^^^^\n\n")
+                sys.stderr.flush()
+
+            return match, idx, output
+
+        return matchWrapper
+
+
     def match(self, stringTokens, idx):
         """
         Function which accepts an iterable of tokens and a current index and determines whether or not this construct
@@ -289,6 +321,7 @@ class Grammar(_TokexGrammar):
     tokens = None
 
     def __init__(self):
+        _TokexGrammar.__init__(self)
         self.tokens = list()
 
 
@@ -340,6 +373,8 @@ class Token(_TokexGrammar):
 
 
     def __init__(self, grammarToken):
+        _TokexGrammar.__init__(self)
+
         if grammarToken[0] != grammarToken[-1]:
             raise GrammarParsingError("Token must start and end with the same character.")
 
@@ -360,7 +395,7 @@ class Token(_TokexGrammar):
             self.regex = Token.LiteralMatcher(grammarToken[1:-1], grammarToken[0] == '`')
 
         elif grammarToken[0] in ('^', '$'):
-            flags = (re.I if grammarToken[0] == '$' else 0)
+            flags = (re.I if grammarToken[0] == '^' else 0)
             self.regex = re.compile(grammarToken[1:-1], flags)
 
         else:

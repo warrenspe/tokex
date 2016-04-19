@@ -26,6 +26,9 @@ import re
 # Project imports
 import utils._Grammar
 
+# GLOBALS
+DEBUG = False # If True will print out debugging info to sys.stderr during a match
+
 class _StringParser(object):
 
     grammar = None
@@ -69,7 +72,13 @@ class _StringParser(object):
 
         tokens = self._tokenizeString(inputString)
 
-        match, endIdx, output = self.grammar.match(tokens, 0)
+        try:
+            utils._Grammar.DEBUG = DEBUG
+            match, endIdx, output = self.grammar.match(tokens, 0)
+
+
+        finally:
+            utils._Grammar.DEBUG = False
 
         if match and (not matchEntirety or endIdx == len(tokens)):
             return output[None]

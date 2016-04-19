@@ -38,6 +38,13 @@ class TestGrammarParsing(tests.TokexTestCase):
         self.assertIsNone(regexGrammar.match('anything "string" \'notstring\' nota_c'))
         self.assertIsNone(regexGrammar.match('anything string notstring nota_c'))
 
+        self.assertIsNone(Tokex.match("$caseSensitive$", "casesensitive"))
+        self.assertIsNone(Tokex.match("$caseSensitive$", "CASESENSITIVE"))
+        self.assertIsNotNone(Tokex.match("$caseSensitive$", "caseSensitive"))
+        self.assertIsNotNone(Tokex.match("^caseSensitive^", "casesensitive"))
+        self.assertIsNotNone(Tokex.match("^caseSensitive^", "CASESENSITIVE"))
+
+
 
     def testParseNamedToken(self):
         grammar = """
