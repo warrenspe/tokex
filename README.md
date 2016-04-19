@@ -125,17 +125,19 @@ True
 ```
 
 ## Notes
-By default, input strings will be tokenized based on the following rules, in the following order of precedence:
+- By default, input strings will be tokenized based on the following rules, in the following order of precedence:
 
-All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens  
-All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)  
-All other non-white space characters are broken up into their own 1-character tokens.
+  All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens  
+  All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)  
+  All other non-white space characters are broken up into their own 1-character tokens.
 
-The tokenizing behavior can be modified by updating the attribute `tokenizerRegexes` of a compiled grammar.  This attribute refers to a list of strings that are joined using "|" and passed to the `re.findall` function to tokenize the query.  As an example:  
-- Allow '#' characters to be joined in tokens with other alphanumeric characters to, say, create tokens like: "Phone#" (instead of "Phone", "#")
-  - `parser.tokenizerRegexes[2] = "[\w#]+`
+  The tokenizing behavior can be modified by updating the attribute `tokenizerRegexes` of a compiled grammar.  This attribute refers to a list of strings that are joined using "|" and passed to the `re.findall` function to tokenize the query.  As an example:  
+  - Allow '#' characters to be joined in tokens with other alphanumeric characters to, say, create tokens like: "Phone#" (instead of "Phone", "#")
+    - `parser.tokenizerRegexes[2] = "[\w#]+`
 
-This 'feature' will be getting reworked in a future version.
+  This 'feature' will be getting reworked in a future version.
+
+- To debug why a grammar matches/doesn't match a particular input string, set Tokex.DEBUG = True before calling match on the input string.  Detailed debugging information will be written to STDERR.
 
 ## Defining a Grammar.
 Below is a BNF representation of a Tokex compatible grammar.
