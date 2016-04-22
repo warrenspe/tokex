@@ -21,7 +21,7 @@
 """
 
 # Standard imports
-import re
+import re, sys
 
 # Project imports
 import utils._Grammar
@@ -71,6 +71,10 @@ class _StringParser(object):
         """
 
         tokens = self._tokenizeString(inputString)
+
+        if DEBUG:
+            sys.stderr.write("\nInput Tokens:\n\n%s\n\n" % tokens)
+            sys.stderr.flush()
 
         try:
             utils._Grammar.DEBUG = DEBUG

@@ -33,6 +33,20 @@ class GrammarParsingError(Exception):
     Error thrown when a user-defined grammar is malformed.
     """
 
+class GrammarTokenizingError(GrammarParsingError):
+    """
+    Error thrown when we are unable to tokenize a user-defined grammar.
+    """
+
+    def __init__(self, token):
+        super(GrammarParsingError, self).__init__(self)
+
+        self.token = token
+
+    def __str__(self):
+        return "Unknown token when parsing Grammar: %s" % self.token
+
+
 ###
 # Utility functions
 ###
@@ -80,7 +94,7 @@ def _tokenizeGrammar(grammarString):
         while True:
             match = next(iterator)
             if 'nontoken' in match.groupdict() and match.groupdict()['nontoken'] is not None:
-                raise GrammarParsingError("Unknown token: %s" % match.groupdict()['nontoken'])
+                raise GrammarTokenizingError(match.groupdict()['nontoken'])
 
             elif 'comment' in match.groupdict() and match.groupdict()['comment'] is not None:
                 continue
@@ -376,7 +390,7 @@ class Token(_TokexGrammar):
         _TokexGrammar.__init__(self)
 
         if grammarToken[0] != grammarToken[-1]:
-            raise GrammarParsingError("Token must start and end with the same character.")
+            raise GrammarParsingError("Token must start and end with the same character: %s" % grammarToken)
 
 
         if grammarToken[0] == "_":
