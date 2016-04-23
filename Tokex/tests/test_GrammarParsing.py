@@ -1,3 +1,7 @@
+# Standard imports
+import sys
+sys.path.insert(1, '..')
+
 # Project imports
 import Tokex
 import tests
