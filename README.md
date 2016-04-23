@@ -1,6 +1,13 @@
 # Tokex
 A Python string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
+[Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)
+[Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)
+[Usage Examples](https://github.com/warrenspe/Tokex/blob/master/README.md#usage-examples)
+[Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)
+[Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)
+[Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes)
+
 ## Why Tokex?
 Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between the two is that re is focused on matching characters while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar which can result in fewer bugs than if it were written as a re pattern, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.  Finally, Tokex allows for Python style comments to be inserted directly into the grammar.
 
@@ -140,10 +147,7 @@ True
 
 Alternatively, the base class can be extended simply by creating a subclass and overriding a class list named `tokenizerRegexes`.  This list should contain regular expressions to match tokens, in order of precedence (ie a regular expression in index 0 has precedence over one in index 1).  This eliminates the need to define a `tokenize` method.
 
-## Notes
-- To debug why a grammar matches/doesn't match a particular input string, set `Tokex.DEBUG = True` before calling match on the input string.  Detailed debugging information will be written to STDERR.
-
-## Defining a Grammar.
+## Defining a Grammar (BNF)
 Below is a BNF representation of a Tokex compatible grammar.
 ```
 grammar ::= <statement> | <statement> <grammar>
@@ -178,7 +182,7 @@ not-str ::= "_notstr_"
 not-token ::= "_!" <anything> "_"
 ```
 
-## Tokex Grammar Tokens
+## Defining A Grammar
 Below is a description of each type of token that can be used to construct a Tokex grammar.
 #### General Notes
 - For `@name: ... @@`, `(name: ... )`, and `<name: ... >` declarations, the name can consist of any characters from: a-z, A-Z, 0-9, \_ and -.
@@ -414,3 +418,6 @@ The following raises an exception.
 @@
 ```
 (`@a@` cannot appear until the sub grammar 'a' is completed)
+
+## Notes
+- To debug why a grammar matches/doesn't match a particular input string, set `Tokex.DEBUG = True` before calling match on the input string.  Detailed debugging information will be written to STDERR.
