@@ -1,12 +1,19 @@
 # Tokex
 A Python string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
-[Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)
-[Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)
-[Usage Examples](https://github.com/warrenspe/Tokex/blob/master/README.md#usage-examples)
-[Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)
-[Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)
-[Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes)
+[Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)  
+[Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)  
+[Usage Examples](https://github.com/warrenspe/Tokex/blob/master/README.md#usage-examples)  
+[Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)  
+[Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar-bnf)  
+[Defining A Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)  
+  [General Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#general-notes)  
+  [Tokens](https://github.com/warrenspe/Tokex/blob/master/README.md#tokens)  
+  [Regular Expressions](https://github.com/warrenspe/Tokex/blob/master/README.md#regular-expressions)  
+  [Naming](https://github.com/warrenspe/Tokex/blob/master/README.md#naming)  
+  [Flow](https://github.com/warrenspe/Tokex/blob/master/README.md#flow)  
+  [Sub Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#sub-grammar)  
+[Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes)  
 
 ## Why Tokex?
 Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between the two is that re is focused on matching characters while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar which can result in fewer bugs than if it were written as a re pattern, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.  Finally, Tokex allows for Python style comments to be inserted directly into the grammar.
