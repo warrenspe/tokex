@@ -289,14 +289,14 @@ class _TokexGrammar(object):
 
         @functools.wraps(matchFunction)
         def matchWrapper(stringTokens, idx):
-            if DEBUG:
+            if DEBUG and idx < len(stringTokens):
                 sys.stderr.write("\nvvvvvvvvvv\n")
                 sys.stderr.write("Current Token: %s\n\nMATCHING: %s\n" % (self, stringTokens[idx]))
                 sys.stderr.flush()
 
             match, idx, output = matchFunction(stringTokens, idx)
 
-            if DEBUG:
+            if DEBUG and idx < len(stringTokens):
                 sys.stderr.write("Matched: %s\n" % match)
                 sys.stderr.write("^^^^^^^^^^\n\n")
                 sys.stderr.flush()

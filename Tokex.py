@@ -21,41 +21,28 @@
 """
 
 # Standard imports
-import re, sys
+import inspect, sys
 
 # Project imports
-import utils._Grammar
+import utils.Grammar
+import tokenizers.Tokenizer
 
 # GLOBALS
 DEBUG = False # If True will print out debugging info to sys.stderr during a match
 
 class _StringParser(object):
-
     grammar = None
-    stringTokenizer = None
-    tokenizerRegexes = [
-        '"[^"]*"',
-        "'[^']*'",
-        '\w+',
-        '\S'
-    ]
+    tokenizer = None
 
-    def __init__(self, grammar, allowSubGrammarDefinitions):
-        self.grammar = utils._Grammar.constructGrammar(grammar, allowSubGrammarDefinitions)
+    def __init__(self, grammar, allowSubGrammarDefinitions, tokenizer):
+        self.grammar = utils.Grammar.constructGrammar(grammar, allowSubGrammarDefinitions)
 
-
-    # Internal functions
-    def _tokenizeString(self, inputString):
-        """
-        Tokenizes a string, splitting on whitespace.  Takes quotes and apostrophes into account when splitting tokens.
-        Example: "abc def 'g h i' jkl" -> ['abc', 'def', "'g h i'", 'jkl']
-
-        Inputs: inputString - The string to tokenize.
-
-        Outputs: An iterable of tokens.
-        """
-
-        return re.findall("(%s)" % "|".join(self.tokenizerRegexes), inputString)
+        if inspect.isclass(tokenizer) and issubclass(tokenizer, tokenizers.Tokenizer.TokexTokenizer):
+            self.tokenizer = tokenizer()
+        elif isinstance(tokenizer, tokenizers.Tokenizer.TokexTokenizer):
+            self.tokenizer = tokenizer
+        else:
+            raise Exception("Given tokenizer is not an instance of subclass of tokenizers.Tokenizer.TokexTokenizer")
 
 
     # User-Level functions
@@ -70,33 +57,49 @@ class _StringParser(object):
         Outputs: A dictionary representing the output of parsing if the string matches the grammar, else None.
         """
 
-        tokens = self._tokenizeString(inputString)
+        tokens = self.tokenizer.tokenize(inputString)
 
         if DEBUG:
             sys.stderr.write("\nInput Tokens:\n\n%s\n\n" % tokens)
             sys.stderr.flush()
 
         try:
-            utils._Grammar.DEBUG = DEBUG
+            utils.Grammar.DEBUG = DEBUG
             match, endIdx, output = self.grammar.match(tokens, 0)
 
 
         finally:
-            utils._Grammar.DEBUG = False
+            utils.Grammar.DEBUG = False
 
         if match and (not matchEntirety or endIdx == len(tokens)):
             return output[None]
 
 
-def compile(grammar, allowSubGrammarDefinitions=True):
+def compile(grammar,
+            allowSubGrammarDefinitions=True,
+            tokenizer=tokenizers.Tokenizer.TokexTokenizer):
     """
     Constructs and returns an instance of _StringParser for repeated parsing of strings using the given grammar.
+
+    Inputs: grammar   - The grammar to use to parse the input string.
+            allowSubGrammarDefinitions - A Boolean, indicating whether or not sub grammar declarations,
+                                         (@name: grammar @@), should be processed.  If grammarString has
+                                         come from an untrusted source this should be set to False, to
+                                         mitigate the potential for a `Billion Laughs` attack.
+            tokenizer - Optional: An instance or class of tokenizers.Tokenizer.TokexTokenizer or a subclass of it,
+                            used to tokenize the input string for parsing. Defaults to the base class TokexTokenizer.
+
+    Outputs: An instance of _StringParser whose `match` function can be used to repeatedly parse input strings.
     """
 
-    return _StringParser(grammar, allowSubGrammarDefinitions)
+    return _StringParser(grammar, allowSubGrammarDefinitions, tokenizer)
 
 
-def match(grammar, inputString, matchEntirety=True, allowSubGrammarDefinitions=True):
+def match(grammar,
+          inputString,
+          matchEntirety=True,
+          allowSubGrammarDefinitions=True,
+          tokenizer=tokenizers.Tokenizer.TokexTokenizer):
     """
     Convenience function for performing matches using a grammar against a string.
 
@@ -109,8 +112,14 @@ def match(grammar, inputString, matchEntirety=True, allowSubGrammarDefinitions=T
                                          (@name: grammar @@), should be processed.  If grammarString has
                                          come from an untrusted source this should be set to False, to
                                          mitigate the potential for a `Billion Laughs` attack.
+            tokenizer     - Optional: An instance or class of tokenizers.Tokenizer.TokexTokenizer or a subclass of it,
+                            used to tokenize the input string for parsing. Defaults to the base class TokexTokenizer.
 
     Outputs: The result of matching the inputString, if it matches, else None.
     """
 
-    return _StringParser(grammar, allowSubGrammarDefinitions).match(inputString, matchEntirety=matchEntirety)
+    return _StringParser(
+        grammar,
+        allowSubGrammarDefinitions,
+        tokenizer
+    ).match(inputString, matchEntirety=matchEntirety)

@@ -2,7 +2,7 @@
 import re
 
 # Project imports
-import utils._Grammar as Grammar
+import utils.Grammar as Grammar
 import tests
 
 class TestGrammarConstruction(tests.TokexTestCase):
