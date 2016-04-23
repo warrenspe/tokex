@@ -7,12 +7,12 @@ A Python string parsing library allowing for parsing of complex strings into dic
 [Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)  
 [Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar-bnf)  
 [Defining A Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)  
-  [General Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#general-notes)  
-  [Tokens](https://github.com/warrenspe/Tokex/blob/master/README.md#tokens)  
-  [Regular Expressions](https://github.com/warrenspe/Tokex/blob/master/README.md#regular-expressions)  
-  [Naming](https://github.com/warrenspe/Tokex/blob/master/README.md#naming)  
-  [Flow](https://github.com/warrenspe/Tokex/blob/master/README.md#flow)  
-  [Sub Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#sub-grammar)  
+&nbsp;&nbsp;&nbsp;[General Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#general-notes)  
+&nbsp;&nbsp;&nbsp;[Tokens](https://github.com/warrenspe/Tokex/blob/master/README.md#tokens)  
+&nbsp;&nbsp;&nbsp;[Regular Expressions](https://github.com/warrenspe/Tokex/blob/master/README.md#regular-expressions)  
+&nbsp;&nbsp;&nbsp;[Naming](https://github.com/warrenspe/Tokex/blob/master/README.md#naming)  
+&nbsp;&nbsp;&nbsp;[Flow](https://github.com/warrenspe/Tokex/blob/master/README.md#flow)  
+&nbsp;&nbsp;&nbsp;[Sub Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#sub-grammar)  
 [Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes)  
 
 ## Why Tokex?
