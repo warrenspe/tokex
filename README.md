@@ -10,12 +10,14 @@ Tokex attempts to emulates re in its usage by offering two functions, compile an
 **Tokex.compile** accepts a grammar and returns an object with a match function following the same spec as Tokex.match.  Tokex.compile is useful in much the same way as re.compile, for compiling a grammar that will be used to match strings multiple times.  Tokex.compile accepts two parameters:
 - grammar: (String) The grammar to compile.  This is very similar in concept to the pattern parameter passed to re.compile.
 - allowSubGrammarDefinitions: (Boolean) Default True.  Toggles support for named sub grammars (See below).  Tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars.  If this is ever done, sub grammar support should be turned off to mitigate this type of attack.
+- tokenizer: (TokexTokenizer subclass or instance) Optional: Either a class or an instance, descending from tokenizers.Tokenizer.TokexTokenizer which will be used to tokenize input strings to the parser.  Uses tokenizers.Tokenizer.TokexTokenizer by default if none passed.
 
 **Tokex.match** compiles a grammar and runs it against an input string and returns either None or a dictionary of named matches found within the input string, depending on whether or not the grammar matches the input string.  Tokex.match accepts 4 parameters:
-- grammar: (String) See Tokex.compile
+- grammar: (String) See Tokex.compile.
 - inputString: (String) to match the grammar against.
 - matchEntirety: (Boolean) Default True.  If True, requires that the entire input string be matched by the grammar.  If set to False, allows for tokens to be remaining at the end of the input string, as long as the grammar matches from the beginning.
-- allowSubGrammarDefinitions: (Boolean) See Tokex.compile
+- allowSubGrammarDefinitions: (Boolean) See Tokex.compile.
+- tokenizer: (TokexTokenizer subclass or instance) Optional: See Tokex.compile.
 
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
@@ -124,19 +126,21 @@ True
 True
 ```
 
-## Notes
-- By default, input strings will be tokenized based on the following rules, in the following order of precedence:
+## Input String Tokenization
+- By default, input strings will be tokenized using the default tokenizer, which tokenizes tokens using the following order of precedence:
 
   All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens  
   All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)  
-  All other non-white space characters are broken up into their own 1-character tokens.
+  All other non-white space characters are broken up into their own 1-character tokens.  
 
-  The tokenizing behavior can be modified by updating the attribute `tokenizerRegexes` of a compiled grammar.  This attribute refers to a list of strings that are joined using "|" and passed to the `re.findall` function to tokenize the query.  As an example:  
-  - Allow '#' characters to be joined in tokens with other alphanumeric characters to, say, create tokens like: "Phone#" (instead of "Phone", "#")
-    - `parser.tokenizerRegexes[2] = "[\w#]+`
+  The tokenizing behavior can be modified by creating a new subclass of `tokenizers.Tokenizer.TokexTokenizer`, or by using one of the pre-built tokenizers in `/tokenizers/`.  There are only two requirements for implementing your own tokenizing class:  
 
-  This 'feature' will be getting reworked in a future version.
+1. It must be a subclass of `tokenizers.Tokenizer.TokexTokenizer`
+2. It must define a `tokenize` method, accepting just the string to tokenize and returning a list of parsed tokens.
 
+Alternatively, the base class can be extended simply by creating a subclass and overriding a class list named `tokenizerRegexes`.  This list should contain regular expressions to match tokens, in order of precedence (ie a regular expression in index 0 has precedence over one in index 1).  This eliminates the need to define a `tokenize` method.
+
+## Notes
 - To debug why a grammar matches/doesn't match a particular input string, set `Tokex.DEBUG = True` before calling match on the input string.  Detailed debugging information will be written to STDERR.
 
 ## Defining a Grammar.
