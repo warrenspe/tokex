@@ -172,7 +172,7 @@ one-of-set ::= "{" <grammar> "}"
 
 delimiter-grammar ::= "" | "[" <grammar> "]"
 
-comment ::= "#" <anything> "\n" | "#" <anything> "EOF"
+comment ::= "#" <anything> "\n" | "#" <anything> EOF
 
 sub-grammar-declaration ::= "@" <name> ": " <grammar> "@@"
 sub-grammar-usage ::= "@" <name> "@"
