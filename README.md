@@ -1,5 +1,5 @@
 # Tokex
-A Python string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
+A Python 2 string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 [Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)  
 [Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)  
@@ -21,12 +21,12 @@ Admittedly, with a complex enough regex, Python's built-in [re](https://docs.pyt
 ## Usage
 Tokex attempts to emulates re in its usage by offering two functions, compile and match.
 
-**Tokex.compile** accepts a grammar and returns an object with a match function following the same spec as Tokex.match.  Tokex.compile is useful in much the same way as re.compile, for compiling a grammar that will be used to match strings multiple times.  Tokex.compile accepts two parameters:
-- grammar: (String) The grammar to compile.  This is very similar in concept to the pattern parameter passed to re.compile.
-- allowSubGrammarDefinitions: (Boolean) Default True.  Toggles support for named sub grammars (See below).  Tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars.  If this is ever done, sub grammar support should be turned off to mitigate this type of attack.
+**Tokex.compile** accepts a grammar and returns an object with a match function, which accepts two parameters: inputString and matchEntirety (see Tokex.match).  Tokex.compile is useful in much the same way as re.compile, for compiling a grammar that will be used to match strings multiple times.  Tokex.compile accepts three parameters:
+- grammar: (String) The grammar to compile.  This is similar in concept to the pattern parameter passed to re.compile.
+- allowSubGrammarDefinitions: (Boolean) Default True.  Toggles support for named sub grammars (See below).  Tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars.  If this is ever required, sub grammar support should be turned off to mitigate this type of attack.
 - tokenizer: (TokexTokenizer subclass or instance) Optional: Either a class or an instance, descending from tokenizers.Tokenizer.TokexTokenizer which will be used to tokenize input strings to the parser.  Uses tokenizers.Tokenizer.TokexTokenizer by default if none passed.
 
-**Tokex.match** compiles a grammar and runs it against an input string and returns either None or a dictionary of named matches found within the input string, depending on whether or not the grammar matches the input string.  Tokex.match accepts 4 parameters:
+**Tokex.match** compiles a grammar and runs it against an input string and returns either None or a dictionary of named matches found within the input string, depending on whether or not the grammar matches the input string.  Tokex.match accepts five parameters:
 - grammar: (String) See Tokex.compile.
 - inputString: (String) to match the grammar against.
 - matchEntirety: (Boolean) Default True.  If True, requires that the entire input string be matched by the grammar.  If set to False, allows for tokens to be remaining at the end of the input string, as long as the grammar matches from the beginning.
