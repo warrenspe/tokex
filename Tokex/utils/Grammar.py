@@ -1,28 +1,8 @@
-"""
-    File containing a Grammar object and grammar parsing function which are used to parse user-defined grammars.
-    Copyright (C) 2016 Warren Spencer
-    warrenspencer27@gmail.com
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
-
-# Standard imports
-import re, collections, sys, functools
-
-# GLOBALS
-DEBUG = False # If True, will print matching info to sys.stderr during a match
+import collections
+import functools
+import logging
+import re
+import sys
 
 ###
 # Custom exceptions
@@ -51,12 +31,12 @@ class GrammarTokenizingError(GrammarParsingError):
 # Utility functions
 ###
 
-def _tokenizeGrammar(grammarString):
+def _tokenize_grammar(grammar_string):
     """
     Function which accepts a grammar string and returns an iterable of tokens
     """
 
-    grammarTokensPattern = "|".join((
+    grammar_tokens_pattern = "|".join((
         r"@\s*[\w-]+?\s*:",  # Defined Sub Grammar open
         r"@\s*[\w-]*?\s*@",  # Defined Sub Grammar close & Usage
         r"\{",               # One of Set open
@@ -82,12 +62,12 @@ def _tokenizeGrammar(grammarString):
     ))
 
 
-    commentTokenPattern =  r"(?P<comment>#[^\n]*(\n|$))"
-    nonGrammarTokenPattern = r"(?P<nontoken>\S+)"
+    comment_token_pattern =  r"(?P<comment>#[^\n]*(\n|$))"
+    non_grammar_token_pattern = r"(?P<nontoken>\S+)"
 
-    pattern = "|".join((grammarTokensPattern, commentTokenPattern, nonGrammarTokenPattern))
+    pattern = "|".join((grammar_tokens_pattern, comment_token_pattern, non_grammar_token_pattern))
 
-    iterator = re.finditer(pattern, grammarString)
+    iterator = re.finditer(pattern, grammar_string)
 
     tokens = []
     try:
@@ -99,115 +79,115 @@ def _tokenizeGrammar(grammarString):
             elif 'comment' in match.groupdict() and match.groupdict()['comment'] is not None:
                 continue
 
-            toAppend = match.group()
+            to_append = match.group()
 
             # Check for escapes in tokens, remove the escaping \ if present
-            if toAppend[0] in ('"', "'", '`', '^', '$', '_'):
-                toAppend = toAppend.replace("\\%s" % toAppend[0], toAppend[0])
+            if to_append[0] in ('"', "'", '`', '^', '$', '_'):
+                to_append = to_append.replace("\\%s" % to_append[0], to_append[0])
 
-            tokens.append(toAppend)
+            tokens.append(to_append)
 
     except StopIteration:
         return tokens
 
 
-def _processSubGrammarDefinitions(grammarTokens):
+def _process_sub_grammar_definitions(grammar_tokens):
     """
     Function which expands subgrammar definitions into the grammar string.
 
-    Inputs: grammarTokens - A list of tokens in the grammar
+    Inputs: grammar_tokens - A list of tokens in the grammar
 
     Outputs: A list of tokens in the grammar, after having expanded user defined grammar tokens.
     """
 
     # List of tokens after expanding defined sub grammars
-    parsedGrammarTokens = []
+    parsed_grammar_tokens = []
 
     # Dictionary mapping sub grammar names to tokens they contain
     # Note: None is being used here to refer to the global namespace, ie the main list of tokens.
-    #       so we map it here to parsedGrammarTokens
-    subGrammars = collections.defaultdict(list, {None: parsedGrammarTokens})
+    #       so we map it here to parsed_grammar_tokens
+    sub_grammars = collections.defaultdict(list, {None: parsed_grammar_tokens})
 
     # Dictionary for determining the scope of a sub grammar declaration.
     # Maps the name of a sub grammar to a list of sub grammar names within its scope.
-    subGrammarNameSpaces = collections.defaultdict(list)
+    sub_grammar_name_spaces = collections.defaultdict(list)
 
     # Stack of sub grammar names to record the current grammar being constructed.
-    subGrammarStack = [None] # Use None to record the topmost, global namespace
+    sub_grammar_stack = [None] # Use None to record the topmost, global namespace
 
-    for token in grammarTokens:
+    for token in grammar_tokens:
         # Handle new defined sub grammar declarations
         if token[0] == '@' and token[-1] == ':':
-            subGrammarName = token[1:-1].strip()
-            if subGrammarName in subGrammars or subGrammarName in subGrammarStack:
-                raise GrammarParsingError("Redeclaration of defined sub grammar: %s" % subGrammarName)
+            sub_grammar_name = token[1:-1].strip()
+            if sub_grammar_name in sub_grammars or sub_grammar_name in sub_grammar_stack:
+                raise GrammarParsingError("Redeclaration of defined sub grammar: %s" % sub_grammar_name)
 
-            subGrammarStack.append(subGrammarName)
+            sub_grammar_stack.append(sub_grammar_name)
 
         # Handle the closing of sub grammar declarations
         elif token == '@@':
-            if subGrammarStack[-1] is None:
+            if sub_grammar_stack[-1] is None:
                 raise GrammarParsingError("Unexpected @@; not currently defining a sub grammar.")
 
-            closedGrammar = subGrammarStack.pop()
+            closed_grammar = sub_grammar_stack.pop()
 
             # Remove any sub grammars defined within the recently closed grammar's scope
-            if closedGrammar in subGrammarNameSpaces:
-                for subGrammarName in subGrammarNameSpaces.pop(closedGrammar):
-                    subGrammars.pop(subGrammarName)
+            if closed_grammar in sub_grammar_name_spaces:
+                for sub_grammar_name in sub_grammar_name_spaces.pop(closed_grammar):
+                    sub_grammars.pop(sub_grammar_name)
 
             # Add the newly closed sub grammar to its parents namespace
-            subGrammarNameSpaces[subGrammarStack[-1]].append(closedGrammar)
+            sub_grammar_name_spaces[sub_grammar_stack[-1]].append(closed_grammar)
 
             # Edge case; empty sub grammar has been saved, add a key to our defaultdict so it can be later used
-            if closedGrammar not in subGrammars:
-                subGrammars[closedGrammar] # subGrammars is a defaultdict so accessing the key adds it
+            if closed_grammar not in sub_grammars:
+                sub_grammars[closed_grammar] # sub_grammars is a defaultdict so accessing the key adds it
 
         # Handle inserting a sub grammar
         elif token[0] == '@' and token[-1] == '@':
-            subGrammarName = token[1:-1].strip()
+            sub_grammar_name = token[1:-1].strip()
 
-            if subGrammarName not in subGrammars:
+            if sub_grammar_name not in sub_grammars:
                 # Give a slightly more descriptive error message if we've seen a declaration for this sub grammar before
-                if subGrammarName in subGrammarStack:
-                    raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, subGrammarName))
+                if sub_grammar_name in sub_grammar_stack:
+                    raise GrammarParsingError("Cannot apply %s; %s is not yet fully defined." % (token, sub_grammar_name))
 
-                raise GrammarParsingError("Unknown sub grammar: %s" % subGrammarName)
+                raise GrammarParsingError("Unknown sub grammar: %s" % sub_grammar_name)
 
             # Apply the sub grammar to the most recent sub grammar (or topmost grammar)
-            subGrammars[subGrammarStack[-1]].extend(subGrammars[subGrammarName])
+            sub_grammars[sub_grammar_stack[-1]].extend(sub_grammars[sub_grammar_name])
 
         # Handle adding tokens to a defined sub grammar (or topmost grammar)
         else:
-            subGrammars[subGrammarStack[-1]].append(token)
+            sub_grammars[sub_grammar_stack[-1]].append(token)
 
-    if subGrammarStack[-1] is not None:
-        raise GrammarParsingError("Unclosed defined sub grammar: %s" % subGrammarStack[-1])
+    if sub_grammar_stack[-1] is not None:
+        raise GrammarParsingError("Unclosed defined sub grammar: %s" % sub_grammar_stack[-1])
 
-    return parsedGrammarTokens
+    return parsed_grammar_tokens
 
 
-def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
+def construct_grammar(grammar_string, allow_sub_grammar_definitions=True):
     """
     Function which accepts a user-defined grammar string and returns an instance of Grammar representing it.
 
-    Inputs: grammarString              - The user-defined grammar string representing the grammar we should construct.
-            allowSubGrammarDefinitions - A boolean, indicating whether or not we should process user defined sub grammars.
+    Inputs: grammar_string                - The user-defined grammar string representing the grammar we should construct.
+            allow_sub_grammar_definitions - A boolean, indicating whether or not we should process user defined sub grammars.
     """
 
-    stackOpenDict = {
+    stack_open_dict = {
         "{": OneOfSet,
         "(?": ZeroOrOne,
         "(*": ZeroOrMore,
         "(+": OneOrMore,
     }
 
-    stackNamingOpenDict = {
+    stack_naming_open_dict = {
         "<": NamedToken,
         "(": Grammar,
     }
 
-    stackCloseDict = {
+    stack_close_dict = {
         "}": OneOfSet,
         ")": (ZeroOrOne, ZeroOrMore, OneOrMore, Grammar),
         ">": NamedToken,
@@ -215,59 +195,59 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
     }
 
     grammar = Grammar()
-    grammarStack = [grammar]
+    grammar_stack = [grammar]
 
-    grammarTokens = _tokenizeGrammar(grammarString)
+    grammar_tokens = _tokenize_grammar(grammar_string)
 
-    if allowSubGrammarDefinitions:
-        grammarTokens = _processSubGrammarDefinitions(grammarTokens)
+    if allow_sub_grammar_definitions:
+        grammar_tokens = _process_sub_grammar_definitions(grammar_tokens)
 
-    for token in grammarTokens:
-        if not len(grammarStack):
+    for token in grammar_tokens:
+        if not len(grammar_stack):
             raise GrammarParsingError("Too many closing brackets; grammar stack empty while still tokens remaining.")
 
         # Stack-modifying open tokens
-        if token in stackOpenDict:
-            obj = stackOpenDict[token]()
-            grammarStack[-1].append(obj)
-            grammarStack.append(obj)
+        if token in stack_open_dict:
+            obj = stack_open_dict[token]()
+            grammar_stack[-1].append(obj)
+            grammar_stack.append(obj)
 
         # Closing tokens
-        elif token in stackCloseDict:
-            if not isinstance(grammarStack[-1], stackCloseDict[token]):
-                error = "Cannot Close %s, most recent: %s, not %s" % (token, grammarStack[-1], stackCloseDict[token])
+        elif token in stack_close_dict:
+            if not isinstance(grammar_stack[-1], stack_close_dict[token]):
+                error = "Cannot Close %s, most recent: %s, not %s" % (token, grammar_stack[-1], stack_close_dict[token])
                 raise GrammarParsingError(error)
 
-            grammarStack.pop()
+            grammar_stack.pop()
 
         # Named tokens & grammars
-        elif token[0] in stackNamingOpenDict and token[-1] == ":":
-            obj = stackNamingOpenDict[token[0]]()
+        elif token[0] in stack_naming_open_dict and token[-1] == ":":
+            obj = stack_naming_open_dict[token[0]]()
             obj.name = token[1:-1].strip()
-            grammarStack[-1].append(obj)
-            grammarStack.append(obj)
+            grammar_stack[-1].append(obj)
+            grammar_stack.append(obj)
 
         # Singlular tokens
         elif token[0] in ("'", '"', '`', '^', '$', '_'):
-            grammarStack[-1].append(Token(token))
+            grammar_stack[-1].append(Token(token))
 
         # Iterator delimiters
         elif token == "[":
             # Ensure that the token preceeding us is a OneOrMore or a ZeroOrMore
-            if not isinstance(grammarStack[-1], (ZeroOrMore, OneOrMore)):
-                error = "Iteration delimiter must be applied to a (* ) or (+ ) block, not %s" % grammarStack[-1]
+            if not isinstance(grammar_stack[-1], (ZeroOrMore, OneOrMore)):
+                error = "Iteration delimiter must be applied to a (* ) or (+ ) block, not %s" % grammar_stack[-1]
                 raise GrammarParsingError(error)
 
             obj = MoreDelimiter()
-            grammarStack[-1].delimiterGrammar = obj
-            grammarStack.append(obj)
+            grammar_stack[-1].delimiter_grammar = obj
+            grammar_stack.append(obj)
 
         else:
             raise GrammarParsingError("Unknown token: %s" % repr(token))
 
-    if len(grammarStack) != 1:
+    if len(grammar_stack) != 1:
         raise GrammarParsingError("Too few closing brackets; grammar stack length: %s when all tokens processed." %
-                                   len(grammarStack))
+                                   len(grammar_stack))
 
     return grammar
 
@@ -278,45 +258,41 @@ def constructGrammar(grammarString, allowSubGrammarDefinitions=True):
 class _TokexGrammar(object):
 
     def __init__(self, *args, **kwargs):
-        self.match = self._matchWrapper(self.match)
+        self.match = self._match_wrapper(self.match)
 
 
-    def _matchWrapper(self, matchFunction):
+    def _match_wrapper(self, match_function):
         """
         Function wrapper which takes a match function and wraps it in another function to perform additional
         functionality when matching.
         """
 
-        @functools.wraps(matchFunction)
-        def matchWrapper(stringTokens, idx):
-            if DEBUG and idx < len(stringTokens):
-                sys.stderr.write("\nvvvvvvvvvv\n")
-                sys.stderr.write("Current Token: %s\n\nMATCHING: %s\n" % (self, stringTokens[idx]))
-                sys.stderr.flush()
+        @functools.wraps(match_function)
+        def match_wrapper(string_tokens, idx):
+            if logging.getLogger().isEnabledFor(logging.DEBUG) and idx < len(string_tokens):
+                logging.debug("Current Token: %s\n\nMATCHING: %s\n" % (self, string_tokens[idx]))
 
-            match, idx, output = matchFunction(stringTokens, idx)
+            match, idx, output = match_function(string_tokens, idx)
 
-            if DEBUG and idx < len(stringTokens):
-                sys.stderr.write("Matched: %s\n" % match)
-                sys.stderr.write("^^^^^^^^^^\n\n")
-                sys.stderr.flush()
+            if logging.getLogger().isEnabledFor(logging.DEBUG) and idx < len(string_tokens):
+                logging.debug("Matched: %s\n" % match)
 
             return match, idx, output
 
-        return matchWrapper
+        return match_wrapper
 
 
-    def match(self, stringTokens, idx):
+    def match(self, string_tokens, idx):
         """
         Function which accepts an iterable of tokens and a current index and determines whether or not this construct
         matches the list at the current position. Should be overridden in subclasses.
 
-        Inputs: stringTokens - An iterable of string tokens to determine if we match upon.
-                idx          - The start index within the stringTokens to begin processing at.
+        Inputs: string_tokens - An iterable of string tokens to determine if we match upon.
+                idx          - The start index within the string_tokens to begin processing at.
 
         Outputs: A triple containing: {
             match: A boolean depicting whether or not this construct matches the iterable at the current position.
-            newIdx: The index this construct ceased matching upon the iterable, if match is True. Else None
+            new_idx: The index this construct ceased matching upon the iterable, if match is True. Else None
             output: If there are any named matches within this construct, a dictionary or list.  Else None
         )
         """
@@ -328,7 +304,7 @@ class Grammar(_TokexGrammar):
     """
     Grammar class representing a user-defined grammar.  Can contain further instances of itself within its language.
 
-    An instance of this class is expected as a parameter when initializing instances of utils.StringParse.StringParser.
+    An instance of this class is expected as a parameter when initializing instances of utils.string_parser.StringParser.
     """
 
     name = None
@@ -347,18 +323,18 @@ class Grammar(_TokexGrammar):
         self.tokens.append(item)
 
 
-    def match(self, stringTokens, idx):
-        returnDict = dict()
+    def match(self, string_tokens, idx):
+        return_dict = dict()
         for item in self.tokens:
-            match, idx, output = item.match(stringTokens, idx)
+            match, idx, output = item.match(string_tokens, idx)
 
             if not match:
                 return False, None, None
 
             if isinstance(output, dict):
-                returnDict.update(output)
+                return_dict.update(output)
 
-        return True, idx, {self.name: returnDict}
+        return True, idx, {self.name: return_dict}
 
 
 class Token(_TokexGrammar):
@@ -367,65 +343,65 @@ class Token(_TokexGrammar):
     """
 
     # Built-in regex's
-    allToken = re.compile(r".+$")
-    strToken = re.compile(r"([\"'])(\\\1|[^\1])*\1$")
-    notStrToken = re.compile(r"[^\"']*$")
+    all_token = re.compile(r".+$")
+    str_token = re.compile(r"([\"'])(\\\1|[^\1])*\1$")
+    not_str_token = re.compile(r"[^\"']*$")
 
     regex = None
 
     class LiteralMatcher(object):
         literal = None
-        caseSensitive = False
+        case_sensitive = False
 
-        def __init__(self, literal, caseSensitive=0):
+        def __init__(self, literal, case_sensitive=0):
             self.literal = literal
-            self.caseSensitive = caseSensitive
+            self.case_sensitive = case_sensitive
 
 
         def match(self, token):
-            return self.literal == token if self.caseSensitive else self.literal.lower() == token.lower()
+            return self.literal == token if self.case_sensitive else self.literal.lower() == token.lower()
 
 
-    def __init__(self, grammarToken):
+    def __init__(self, grammar_token):
         _TokexGrammar.__init__(self)
 
-        if grammarToken[0] != grammarToken[-1]:
-            raise GrammarParsingError("Token must start and end with the same character: %s" % grammarToken)
+        if grammar_token[0] != grammar_token[-1]:
+            raise GrammarParsingError("Token must start and end with the same character: %s" % grammar_token)
 
 
-        if grammarToken[0] == "_":
-            if grammarToken == "_":
-                self.regex = Token.allToken
-            elif grammarToken == "_str_":
-                self.regex = Token.strToken
-            elif grammarToken == "_notstr_":
-                self.regex = Token.notStrToken
-            elif grammarToken[1] == "!":
-                self.regex = re.compile("(?!%s$).*$" % grammarToken[2:-1], re.I)
+        if grammar_token[0] == "_":
+            if grammar_token == "_":
+                self.regex = Token.all_token
+            elif grammar_token == "_str_":
+                self.regex = Token.str_token
+            elif grammar_token == "_notstr_":
+                self.regex = Token.not_str_token
+            elif grammar_token[1] == "!":
+                self.regex = re.compile("(?!%s$).*$" % grammar_token[2:-1], re.I)
             else:
-                raise GrammarParsingError("Unknown token: %s" % grammarToken)
+                raise GrammarParsingError("Unknown token: %s" % grammar_token)
 
-        elif grammarToken[0] in ("'", '"', '`'):
-            self.regex = Token.LiteralMatcher(grammarToken[1:-1], grammarToken[0] == '`')
+        elif grammar_token[0] in ("'", '"', '`'):
+            self.regex = Token.LiteralMatcher(grammar_token[1:-1], grammar_token[0] == '`')
 
-        elif grammarToken[0] in ('^', '$'):
-            flags = (re.I if grammarToken[0] == '^' else 0)
-            self.regex = re.compile(grammarToken[1:-1], flags)
+        elif grammar_token[0] in ('^', '$'):
+            flags = (re.I if grammar_token[0] == '^' else 0)
+            self.regex = re.compile(grammar_token[1:-1], flags)
 
         else:
-            raise GrammarParsingError("Unknown token type: %s." % grammarToken)
+            raise GrammarParsingError("Unknown token type: %s." % grammar_token)
 
 
     def __repr__(self):
         return self.regex.literal if isinstance(self.regex, Token.LiteralMatcher) else self.regex.pattern
 
 
-    def match(self, stringTokens, idx):
+    def match(self, string_tokens, idx):
         # If the index we're considering is beyond the end of our tokens, we have nothing to match on. Return False.
-        if idx >= len(stringTokens):
+        if idx >= len(string_tokens):
             return False, None, None
 
-        match = self.regex.match(stringTokens[idx])
+        match = self.regex.match(string_tokens[idx])
 
         if match:
             return True, idx + 1, None
@@ -446,11 +422,11 @@ class NamedToken(_TokexGrammar):
         self.token = item
 
 
-    def match(self, stringTokens, idx):
-        match, newIdx, _ = self.token.match(stringTokens, idx)
+    def match(self, string_tokens, idx):
+        match, new_idx, _ = self.token.match(string_tokens, idx)
 
         if match:
-            return True, newIdx, {self.name: stringTokens[idx]}
+            return True, new_idx, {self.name: string_tokens[idx]}
 
         return False, None, None
 
@@ -458,16 +434,16 @@ class ZeroOrOne(Grammar):
 
     name = '__ZeroOrOneNameSpace'
 
-    def match(self, stringTokens, idx):
+    def match(self, string_tokens, idx):
         # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
         # we can match Zero times, return True.  This allows gramars with trailing ZeroOrOne rules to match strings
         # which don't use them.
-        if idx >= len(stringTokens):
+        if idx >= len(string_tokens):
             return True, idx, None
 
-        _, newIdx, output = super(ZeroOrOne, self).match(stringTokens, idx)
+        _, new_idx, output = super(ZeroOrOne, self).match(string_tokens, idx)
 
-        return True, newIdx or idx, (None if output is None else output[self.name])
+        return True, new_idx or idx, (None if output is None else output[self.name])
 
 
 class MoreDelimiter(Grammar):
@@ -481,63 +457,63 @@ class MoreDelimiter(Grammar):
 class ZeroOrMore(Grammar):
 
     name = '__ZeroOrMoreNameSpace'
-    delimiterGrammar = None
-    matchCount = 0 # Convenience attribute for implementing OneOrMore; reset on each call to match
+    delimiter_grammar = None
+    match_count = 0 # Convenience attribute for implementing OneOrMore; reset on each call to match
 
-    def _updateOutputLists(self, dictToUpdateWith, defaultDictToUpdate):
-        for key in dictToUpdateWith:
-            defaultDictToUpdate[key].append(dictToUpdateWith[key])
+    def _update_output_lists(self, dict_to_update_with, default_dict_to_update):
+        for key in dict_to_update_with:
+            default_dict_to_update[key].append(dict_to_update_with[key])
 
 
-    def match(self, stringTokens, idx):
-        self.matchCount = 0
+    def match(self, string_tokens, idx):
+        self.match_count = 0
         outputs = collections.defaultdict(list)
-        currentIdx = idx
+        current_idx = idx
 
-        while idx < len(stringTokens):
-            currentIdx = idx
-            delimiterOutput = None
+        while idx < len(string_tokens):
+            current_idx = idx
+            delimiter_output = None
 
             # If we're not processing the first match, check that any delimiter grammar we may have matches before
             # the next occurance of our grammar
-            if self.matchCount > 0 and self.delimiterGrammar is not None:
-                match, idx, delimiterOutput = self.delimiterGrammar.match(stringTokens, idx)
+            if self.match_count > 0 and self.delimiter_grammar is not None:
+                match, idx, delimiter_output = self.delimiter_grammar.match(string_tokens, idx)
 
                 if not match:
                     break
 
-            match, idx, output = Grammar.match(self, stringTokens, idx)
+            match, idx, output = Grammar.match(self, string_tokens, idx)
 
-            if not match or idx == currentIdx:
+            if not match or idx == current_idx:
                 break
 
-            currentIdx = idx
-            self.matchCount += 1
+            current_idx = idx
+            self.match_count += 1
 
             if output:
-                self._updateOutputLists(output[self.name], outputs)
+                self._update_output_lists(output[self.name], outputs)
 
-            if delimiterOutput:
-                self._updateOutputLists(delimiterOutput[self.delimiterGrammar.name], outputs)
+            if delimiter_output:
+                self._update_output_lists(delimiter_output[self.delimiter_grammar.name], outputs)
 
-        return True, currentIdx, dict(outputs) or None
+        return True, current_idx, dict(outputs) or None
 
 
 class OneOrMore(ZeroOrMore):
 
     name = '__OneOrMoreNameSpace'
 
-    def match(self, stringTokens, idx):
-        _, newIdx, output = ZeroOrMore.match(self, stringTokens, idx)
+    def match(self, string_tokens, idx):
+        _, new_idx, output = ZeroOrMore.match(self, string_tokens, idx)
 
-        return self.matchCount > 0, newIdx, output
+        return self.match_count > 0, new_idx, output
 
 
 class OneOfSet(Grammar):
 
-    def match(self, stringTokens, idx):
+    def match(self, string_tokens, idx):
         for grammar in self.tokens:
-            match, newIdx, output = grammar.match(stringTokens, idx)
+            match, new_idx, output = grammar.match(string_tokens, idx)
             if match:
-                return True, newIdx, output
+                return True, new_idx, output
         return False, None, None

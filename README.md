@@ -1,19 +1,19 @@
 # Tokex
 A Python string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
-[Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)  
-[Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)  
-[Usage Examples](https://github.com/warrenspe/Tokex/blob/master/README.md#usage-examples)  
-[Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)  
-[Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar-bnf)  
-[Defining A Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)  
-&nbsp;&nbsp;&nbsp;[General Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#general-notes)  
-&nbsp;&nbsp;&nbsp;[Tokens](https://github.com/warrenspe/Tokex/blob/master/README.md#tokens)  
-&nbsp;&nbsp;&nbsp;[Regular Expressions](https://github.com/warrenspe/Tokex/blob/master/README.md#regular-expressions)  
-&nbsp;&nbsp;&nbsp;[Naming](https://github.com/warrenspe/Tokex/blob/master/README.md#naming)  
-&nbsp;&nbsp;&nbsp;[Flow](https://github.com/warrenspe/Tokex/blob/master/README.md#flow)  
-&nbsp;&nbsp;&nbsp;[Sub Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#sub-grammar)  
-[Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes-1)  
+[Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)
+[Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)
+[Usage Examples](https://github.com/warrenspe/Tokex/blob/master/README.md#usage-examples)
+[Input String Tokenization](https://github.com/warrenspe/Tokex/blob/master/README.md#input-string-tokenization)
+[Defining A Grammar (BNF)](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar-bnf)
+[Defining A Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#defining-a-grammar)
+&nbsp;&nbsp;&nbsp;[General Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#general-notes)
+&nbsp;&nbsp;&nbsp;[Tokens](https://github.com/warrenspe/Tokex/blob/master/README.md#tokens)
+&nbsp;&nbsp;&nbsp;[Regular Expressions](https://github.com/warrenspe/Tokex/blob/master/README.md#regular-expressions)
+&nbsp;&nbsp;&nbsp;[Naming](https://github.com/warrenspe/Tokex/blob/master/README.md#naming)
+&nbsp;&nbsp;&nbsp;[Flow](https://github.com/warrenspe/Tokex/blob/master/README.md#flow)
+&nbsp;&nbsp;&nbsp;[Sub Grammar](https://github.com/warrenspe/Tokex/blob/master/README.md#sub-grammar)
+[Notes](https://github.com/warrenspe/Tokex/blob/master/README.md#notes-1)
 
 ## Why Tokex?
 Admittedly, with a complex enough regex, Python's built-in [re](https://docs.python.org/3.6/library/re.html) library will allow you to accomplish anything that you would be able to accomplish using Tokex.  The main difference between the two is that re is focused on matching characters while Tokex is focused on matching tokens.  Compared to re however, Tokex allows for a more spaced out, readable definition of a grammar which can result in fewer bugs than if it were written as a re pattern, and allows for grouping and reuse of grammar tokens in named sub grammars in a way reminiscent of BNF, which can significantly cut down on the overall size of the grammar.  Finally, Tokex allows for Python style comments to be inserted directly into the grammar.
@@ -143,11 +143,11 @@ True
 ## Input String Tokenization
 - By default, input strings will be tokenized using the default tokenizer, which tokenizes tokens using the following order of precedence:
 
-  All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens  
-  All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)  
-  All other non-white space characters are broken up into their own 1-character tokens.  
+  All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens
+  All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)
+  All other non-white space characters are broken up into their own 1-character tokens.
 
-  The tokenizing behavior can be modified by creating a new subclass of `tokenizers.Tokenizer.TokexTokenizer`, or by using one of the pre-built tokenizers in `/tokenizers/`.  There are only two requirements for implementing your own tokenizing class:  
+  The tokenizing behavior can be modified by creating a new subclass of `tokenizers.Tokenizer.TokexTokenizer`, or by using one of the pre-built tokenizers in `/tokenizers/`.  There are only two requirements for implementing your own tokenizing class:
 
 1. It must be a subclass of `tokenizers.Tokenizer.TokexTokenizer`
 2. It must define a `tokenize` method, accepting just the string to tokenize and returning a list of parsed tokens.
@@ -201,30 +201,30 @@ Below is a description of each type of token that can be used to construct a Tok
 Matches an input token exactly.
 
 ##### Syntax
-`'Literal Token'`  
-`"Literal Token"`  
-`` `Literal Token` `` (case sensitive)  
+`'Literal Token'`
+`"Literal Token"`
+`` `Literal Token` `` (case sensitive)
 
 ##### Examples
-`'insert' 'into '`  
-`"butterscotch" "pudding"`  
-`` `CAPITAL` ``  
+`'insert' 'into '`
+`"butterscotch" "pudding"`
+`` `CAPITAL` ``
 
 ### Regular Expressions
 Matches a token if the `re` regular expression it contains matches it.
 
 ##### Syntax
-`^Regular Expr^`  
-`$Regular Expr$` (case sensitive)  
+`^Regular Expr^`
+`$Regular Expr$` (case sensitive)
 
 ##### Examples
-`^(yes|no|maybe)^`  
+`^(yes|no|maybe)^`
 `$(FROM|From|from)$`
 
 ##### Convenience Regular Expressions
-`_` Matches any token (Short for `^.+^`)  
-`_str_` Matches any string token; ie one that begins and ends with a " or '  
-`_notstr_` Matches any token, except string tokens (begins and ends with " or ')  
+`_` Matches any token (Short for `^.+^`)
+`_str_` Matches any string token; ie one that begins and ends with a " or '
+`_notstr_` Matches any token, except string tokens (begins and ends with " or ')
 `_!..._` Matches any token except the one it contains.  Example: `_!from_` (case insensitive)
 
 ### Naming
@@ -275,8 +275,8 @@ Named token matches outside of a named grammar will be grouped into a list of ma
 grammar will be grouped into a list of dictionaries of matches.
 
 ##### Syntax
-`(* ... )`  
-`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`  
+`(* ... )`
+`(* ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`
 
 ##### Examples
 ```
@@ -302,8 +302,8 @@ grammar will be grouped into a list of dictionaries of matches.
 Specifies one or more matches of the grammar it wraps. Essentially the same as a zero or more block in every other aspect.
 
 ##### Syntax
-`(+ ... )`  
-`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`  
+`(+ ... )`
+`(+ ... [ ... ] )` (the grammar within the `[]` brackets must occur between each match of the grammar within the `(* )`
 
 ##### Examples
 ```
@@ -381,33 +381,33 @@ Match one grammar of a set, zero or many times:
 ```
 
 ### Sub Grammar
-Defines a sub grammar which can be later referenced by using: `@name@`.  
+Defines a sub grammar which can be later referenced by using: `@name@`.
 
 ##### Syntax
-`@name: grammar @@`  
+`@name: grammar @@`
 
 ##### Notes:
 - Defined sub grammars can be nested arbitrarily, but only exist within the scope of the
   namespace of the sub grammar they were defined in.  Sub grammars defined outside of any
   other sub grammars are considered global. Example:
 ```
-@grammarA: 
-    @grammarB: 'Grammar B Only exists inside grammarA' @@  
-    @grammarB@ '<- This works'  
-@@  
+@grammarA:
+    @grammarB: 'Grammar B Only exists inside grammarA' @@
+    @grammarB@ '<- This works'
+@@
 @grammarB@ "<- This raises an exception; as it is undefined outside of grammarA's scope."
-```  
+```
 - Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
   the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
   susceptible to the [Billion Laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack.
   Because of this, you should either not compile untrusted 3rd party grammars, or you should
   disable sub grammar definitions when compiling 3rd party grammars (see documentation below).
 - Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-  sub grammar does not make any modifications to your grammar until it is used.  For example:  
-  `'a' @b: 'b' @@ 'c'` does not match `'a b c'`, but does match `'a c'`  
+  sub grammar does not make any modifications to your grammar until it is used.  For example:
+  `'a' @b: 'b' @@ 'c'` does not match `'a b c'`, but does match `'a c'`
   `'a' @b: 'b' @@ @b@ 'c'` matches `'a b c'`
 - Defined sub grammars cannot be applied until their declaration is finished.  For example,
-  while the following is valid:  
+  while the following is valid:
 ```
 @a:
     'a'
@@ -416,7 +416,7 @@ Defines a sub grammar which can be later referenced by using: `@name@`.
 @@
 @a@
 ```
-(Matches "a b")  
+(Matches "a b")
 The following raises an exception.
 ```
 @a:

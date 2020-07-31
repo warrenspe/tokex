@@ -1,24 +1,3 @@
-"""
-    File containing the base class for a Tokex input string tokenizer.
-
-    Copyright (C) 2016 Warren Spencer
-    warrenspencer27@gmail.com
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-
-# Standard imports
 import re
 
 class TokexTokenizer(object):
@@ -35,7 +14,7 @@ class TokexTokenizer(object):
     broken into two separate tokens.
     """
 
-    tokenizerRegexes = [
+    tokenizer_regexes = [
         '"[^"]*"',
         "'[^']*'",
         '\w+',
@@ -43,13 +22,13 @@ class TokexTokenizer(object):
     ]
 
 
-    def tokenize(self, inputString):
+    def tokenize(self, input_string):
         """
-        Function which is called by Tokex to break an input string into tokens, processed by Tokex.
+        Function which is called by tokex to break an input string into tokens, processed by tokex.
 
-        Inputs: inputString - A string, to break into tokens.
+        Inputs: input_string - A string, to break into tokens.
 
-        Outputs: A list of tokens from inputString.
+        Outputs: A list of tokens from input_string.
         """
 
-        return re.findall("(%s)" % "|".join(self.tokenizerRegexes), inputString)
+        return re.findall("(%s)" % "|".join(self.tokenizer_regexes), input_string)
