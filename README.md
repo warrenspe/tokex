@@ -145,7 +145,7 @@ True
 
   All occurrances of `"[^"]*"` or `'[^']*'` are broken up into their own tokens
   All alphanumeric strings are broken into their own token (strings of consecutive a-z, A-Z, 0-9, _)
-  All other non-white space characters are broken up into their own 1-character tokens.
+  All non-whitespace non-alphanumeric strings are broken up into their own tokens; such as <= ... != <<
 
   The tokenizing behavior can be modified by creating a new subclass of `tokenizers.Tokenizer.TokexTokenizer`, or by using one of the pre-built tokenizers in `/tokenizers/`.  There are only two requirements for implementing your own tokenizing class:
 

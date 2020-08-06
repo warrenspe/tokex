@@ -36,7 +36,7 @@ def _tokenize_grammar(grammar_string):
     Function which accepts a grammar string and returns an iterable of tokens
     """
 
-    grammar_tokens_pattern = "|".join((
+    pattern = "|".join((
         r"@\s*[\w-]+?\s*:",  # Defined Sub Grammar open
         r"@\s*[\w-]*?\s*@",  # Defined Sub Grammar close & Usage
         r"\{",               # One of Set open
@@ -59,13 +59,12 @@ def _tokenize_grammar(grammar_string):
         r"'.*?(?<!\\)'",     # Literal Token
         r'".*?(?<!\\)"',     # Literal Token
         r"`.*?(?<!\\)`",     # Case Insensitive Literal Token
+        r"\\n",               # Newline Token
+
+        r"(?P<comment>#[^\n]*(\n|$))", # Comments
+
+        r"(?P<nontoken>\S+)" # Final fallback - nontoken
     ))
-
-
-    comment_token_pattern =  r"(?P<comment>#[^\n]*(\n|$))"
-    non_grammar_token_pattern = r"(?P<nontoken>\S+)"
-
-    pattern = "|".join((grammar_tokens_pattern, comment_token_pattern, non_grammar_token_pattern))
 
     iterator = re.finditer(pattern, grammar_string)
 
@@ -228,7 +227,7 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=True):
             grammar_stack.append(obj)
 
         # Singlular tokens
-        elif token[0] in ("'", '"', '`', '^', '$', '_'):
+        elif token[0] in ("'", '"', '`', '^', '$', '_') or token in (r'\n',):
             grammar_stack[-1].append(Token(token))
 
         # Iterator delimiters
@@ -255,7 +254,7 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=True):
 # User-defined grammar constructs
 ###
 
-class _TokexGrammar(object):
+class _TokexGrammar:
 
     def __init__(self, *args, **kwargs):
         self.match = self._match_wrapper(self.match)
@@ -346,10 +345,11 @@ class Token(_TokexGrammar):
     all_token = re.compile(r".+$")
     str_token = re.compile(r"([\"'])(\\\1|[^\1])*\1$")
     not_str_token = re.compile(r"[^\"']*$")
+    newline_token = re.compile(r"\n")
 
     regex = None
 
-    class LiteralMatcher(object):
+    class LiteralMatcher:
         literal = None
         case_sensitive = False
 
@@ -372,6 +372,8 @@ class Token(_TokexGrammar):
         if grammar_token[0] == "_":
             if grammar_token == "_":
                 self.regex = Token.all_token
+            elif grammar_token == r"\n":
+                self.regex = Token.newline_token
             elif grammar_token == "_str_":
                 self.regex = Token.str_token
             elif grammar_token == "_notstr_":
