@@ -1,20 +1,29 @@
-import itertools
-
-from ._base_grammar_element import BaseGrammarElement
-from .singular import AnythingElement, NewlineElement, LiteralStringElement, RegexStringElement
+from ._base_element import BaseElement
+from .singular import AnyString, Newline, LiteralString, RegexString
+from .scoped import Grammar, NamedElementToken, ZeroOrOne, ZeroOrMore, OneOrMore
 from .sub_grammar import SubGrammarDefinition, SubGrammarUsage
 
 
+# Dictionary which maps the first character of a grammar token to a grammar element class for all elements which
+# can accept flags
+FIRST_CHAR_VALID_FLAGS = {
+    ".": AnyString,
+    "~": RegexString,
+    "'": LiteralString,
+    '"': LiteralString,
+}
 
-all_elements = [
-    AnythingElement,
-    NewlineElement,
-    LiteralStringElement,
-    RegexStringElement,
-
+__all__ = [
+    BaseElement,
+    AnyString,
+    Newline,
+    LiteralString,
+    RegexString,
+    Grammar,
+    NamedElementToken,
+    ZeroOrOne,
+    ZeroOrMore,
+    OneOrMore,
     SubGrammarDefinition,
     SubGrammarUsage
 ]
-element_tokens = list(itertools.chain([
-    element._grammar_tokens() for element in all_elements
-]))

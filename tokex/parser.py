@@ -1,21 +1,22 @@
 import inspect
 import logging
-import sys
 
 from . import grammar
 from .. import tokenizers
 
-class StringParser:
-    grammar = None
-    tokenizer = None
+class Tokex:
+    _grammar = None
+    _tokenizer = None
 
     def __init__(self, input_grammar, allow_sub_grammar_definitions, tokenizer):
-        self.grammar = grammar.construct_grammar(input_grammar, allow_sub_grammar_definitions)
+        self._grammar = grammar.construct_grammar(input_grammar, allow_sub_grammar_definitions)
 
         if inspect.isclass(tokenizer) and issubclass(tokenizer, tokenizers.TokexTokenizer):
-            self.tokenizer = tokenizer()
+            self._tokenizer = tokenizer()
+
         elif isinstance(tokenizer, tokenizers.TokexTokenizer):
-            self.tokenizer = tokenizer
+            self._tokenizer = tokenizer
+
         else:
             raise Exception("Given tokenizer is not an instance of subclass of tokenizers.TokexTokenizer")
 
@@ -32,14 +33,11 @@ class StringParser:
         Outputs: A dictionary representing the output of parsing if the string matches the grammar, else None.
         """
 
-        tokens = self.tokenizer.tokenize(input_string)
+        tokens = self._tokenizer.tokenize(input_string)
 
         logging.debug("Input Tokens:\n%s" % tokens)
 
-        match, endIdx, output = self.grammar.match(tokens, 0)
+        match, endIdx, output = self._grammar.match(tokens, 0)
 
         if match and (not match_entirety or endIdx == len(tokens)):
             return output[None]
-
-
-

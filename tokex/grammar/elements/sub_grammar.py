@@ -1,39 +1,15 @@
-import re
+from ._base_grammar_element import BaseScopedElement
 
-from ._base_grammar_element import BaseGrammarElement
+class SubGrammarDefinition(BaseScopedElement):
+    """ Element for sub grammar scopes. Only used during grammar creation, these never actually makes it into a Grammar object """
 
-class SubGrammarDefinition(BaseScopedGrammarElement):
-    """ Element for sub grammar scopes. """
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def setup(self):
         self.name = self.token_str[2:-1]
-
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(
-                r"\{<%s>" % cls.valid_token_name_re,
-                opens=True
-            ),
-            cls.create_grammar_token(
-                r"\}"
-                closes=True
-            )
-        ]
+        self.sub_grammars = {}
 
 
-class SubGrammarUsage(BaseGrammarElement):
-    """ Element for sub grammar replacements. """
+class SubGrammarUsage(BaseScopedElement):
+    """ Element for sub grammar replacements. Only used during grammar creation, these never actually makes it into a Grammar object """
 
-    def __init__(self, *args, **kwargs):
-        super()__init__(*args, **kwargs)
-
+    def setup(self):
         self.name = self.str_token[1:-1]
-
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(r"\{%s\}" % cls.valid_token_name_re)
-        ]

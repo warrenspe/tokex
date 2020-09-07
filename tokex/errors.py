@@ -21,14 +21,22 @@ class UnknownGrammarTokenError(GrammarParsingError):
 class InvalidGrammarTokenFlagsError(GrammarParsingError):
     """ Error thrown when a grammar token in a user-defined grammar has an invalid flag """
 
-    def __init__(self, flag, element):
+    def __init__(self, flags, element):
         super().__init__()
 
-        self.flag = flag
+        self.flags = flags
         self.element = element
 
     def __str__(self):
-        return "Invalid flag given to token: %s.  Valid flags are: %s" % (self.flag, self.element.flags)
+        add_s = ""
+        if len(self.flags) > 1:
+            add_s = "s"
+        return "Invalid flag%s given to %r: %s.  Valid flags are: %s" % (
+            add_s,
+            self.element,
+            "".join(self.flags),
+            self.element.valid_flags
+        )
 
 
 class MismatchedBracketsError(GrammarParsingError):
@@ -37,13 +45,18 @@ class MismatchedBracketsError(GrammarParsingError):
     For example, opening for a Zero or more, and closing for a one of set
     """
 
-    def __init__(self, bracket):
+    def __init__(self, bracket, current_scope=None):
         super().__init__()
 
         self.bracket = bracket
+        self.current_scope = current_scope
 
     def __str__(self):
-        return "Mismatched bracket given: %s" % self.bracket
+        if self.current_scope:
+            return "Mismatched bracket given: %s for scoped element: %r" % (self.bracket, self.current_scope)
+
+        else:
+            return "Mismatched bracket given: %s" % self.bracket
 
 
 class SubGrammarError(GrammarParsingError):

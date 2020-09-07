@@ -2,9 +2,9 @@ import re
 
 from .. import flags
 
-from ._base_grammar_element import BaseGrammarElement
+from ._base_grammar_element import BaseElement
 
-class BaseSingularElement(BaseGrammarElement):
+class BaseSingular(BaseElement):
     """ Base class for singular elements, as most share a similar process flow """
 
     def _apply_first(self, string_tokens, idx):
@@ -25,30 +25,24 @@ class BaseSingularElement(BaseGrammarElement):
             to_match = to_match.lower()
 
         if self.has_flag(flags.QUOTED):
-            if to_match[0] not in ('"', "'") or to_match[-1] not in ('"', "'"):
+            if to_match[0] not in ('"', "'") or to_match[-1] != to_match[0]:
                 return None
 
             to_match = to_match[1:-1]
 
-        elif self.has_flag(flags.UNQUOTED):
-            if to_match[0] in ('"', "'") or to_match[-1] in ('"', "'"):
+        elif self.has_flag(flags.NOT) and self.has_flag(flags.QUOTED):
+            if to_match[0] in ('"', "'") and to_match[-1] == to_match[0]:
                 return None
 
         return to_match
 
 
-class AnythingElement(BaseSingularElement):
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(
-                r"\.",
-                flags=[
-                    flags.QUOTED,
-                    flags.UNQUOTED
-                ]
-            )
-        ]
+class AnyString(BaseSingular):
+    human_readable_name = 'Any String [ . ]'
+    valid_flags = {
+        flags.QUOTED,
+        flags.NOT
+    }
 
     def _apply(self, string_tokens, idx):
         if self._apply_first(string_tokens, idx):
@@ -57,97 +51,60 @@ class AnythingElement(BaseSingularElement):
         return False, None, None
 
 
-class NewlineElement(BaseSingularElement):
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(r"\$"),
-            flags=[
-                flags.NOT
-            ]
-        ]
+class Newline(BaseSingular):
+    human_readable_name = 'Newline [ $ ]'
 
     def _apply(self, string_tokens, idx):
         to_match = self._apply_first(string_tokens, idx)
 
-        if to_match == "\n":
+        if to_match == "\\n":
             return True, idx + 1, None
 
         return False, None, None
 
 
+class StringLiteral(BaseSingular):
+    human_readable_name = 'String Literal [ "..." ]'
+    valid_flags = {
+        flags.CASE_SENSITIVE,
+        flags.CASE_INSENSITIVE,
+        flags.QUOTED,
+        flags.NOT
+    }
 
-class LiteralStringElement(BaseSingularElement):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
+    def setup(self):
         if self.has_flag(flags.CASE_INSENSITIVE):
             self.token_str = self.token_str.lower()
-
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(
-                r"'.*?(?<!\\)'",
-                flags=[
-                    flags.QUOTED,
-                    flags.UNQUOTED,
-                    flags.CASE_INSENSITIVE,
-                    flags.CASE_SENSITIVE,
-                    flags.NOT
-                ]
-            ),
-            cls.create_grammar_token(
-                r'".*?(?<!\\)"',
-                flags=[
-                    flags.QUOTED,
-                    flags.UNQUOTED,
-                    flags.CASE_INSENSITIVE,
-                    flags.CASE_SENSITIVE,
-                    flags.NOT
-                ]
-            )
-        ]
 
     def _apply(self, string_tokens, idx):
         to_match = self._apply_first(string_tokens, idx)
 
         if to_match is not None:
-            matches = token_to_match == self.token_str
+            matches = (to_match == self.token_str)
             if matches ^ self.has_flag(flags.NOT):
                 return True, idx + 1, None
 
         return False, None, None
 
-class RegexStringElement(BaseSingularElement):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+class RegexString(BaseSingular):
+    human_readable_name = 'Regular Expression [ ~...~ ]'
+    valid_flags = {
+        flags.CASE_SENSITIVE,
+        flags.QUOTED,
+        flags.NOT
+    }
 
+    def setup(self):
         self.regex = re.compile(
             self.token_str,
             flags=re.I if self.has_flag(flags.CASE_INSENSITIVE) else 0
         )
 
-    @classmethod
-    def _grammar_tokens(cls):
-        return [
-            cls.create_grammar_token(
-                r"~.*?(?<!\\)~",
-                flags=[
-                    flags.QUOTED,
-                    flags.UNQUOTED,
-                    flags.CASE_INSENSITIVE,
-                    flags.CASE_SENSITIVE,
-                    flags.NOT
-                ]
-            )
-        ]
-
     def _apply(self, string_tokens, idx):
         to_match = self._apply_first(string_tokens, idx)
 
         if to_match is not None:
-            matches = self.regex.match(to_match):
+            matches = self.regex.match(to_match)
 
             if matches ^ self.has_flag(flags.NOT):
                 return True, idx + 1, None

@@ -1,7 +1,4 @@
-import inspect
-import sys
-
-from .utils import string_parser
+from .parser import Tokex
 from .tokenizers import tokenizer
 
 
@@ -22,7 +19,7 @@ def compile(input_grammar,
     Outputs: An instance of _StringParser whose `match` function can be used to repeatedly parse input strings.
     """
 
-    return string_parser.StringParser(input_grammar, allow_sub_grammar_definitions, tokenizer)
+    return Tokex(input_grammar, allow_sub_grammar_definitions, tokenizer)
 
 
 def match(input_grammar,
@@ -48,7 +45,7 @@ def match(input_grammar,
     Outputs: The result of matching the input_string, if it matches, else None.
     """
 
-    return string_parser.StringParser(
+    return Tokex(
         input_grammar,
         allow_sub_grammar_definitions,
         tokenizer
