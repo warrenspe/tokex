@@ -1,12 +1,12 @@
 from distutils.core import setup
 
 setup(
-    name='Tokex',
-    version='1.1',
+    name='tokex',
+    version='2.0',
     description="Structured String Parsing Library",
     author="Warren Spencer",
     author_email="warrenspencer27@gmail.com",
     url="https://github.com/warrenspe/Tokex",
 
-    packages=['Tokex', 'Tokex.utils', 'Tokex.tokenizers'],
+    packages=['tokex', 'tokex.utils', 'tokex.tokenizers'],
 )
