@@ -1,15 +1,15 @@
 import inspect
 import logging
 
-from . import grammar
-from .. import tokenizers
+from .grammar import flags, parse
+from . import tokenizers
 
 class Tokex:
     _grammar = None
     _tokenizer = None
 
-    def __init__(self, input_grammar, allow_sub_grammar_definitions, tokenizer):
-        self._grammar = grammar.construct_grammar(input_grammar, allow_sub_grammar_definitions)
+    def __init__(self, input_grammar, allow_sub_grammar_definitions, tokenizer, default_flags=flags.DEFAULTS):
+        self._grammar = parse.construct_grammar(input_grammar, allow_sub_grammar_definitions, default_flags)
 
         if inspect.isclass(tokenizer) and issubclass(tokenizer, tokenizers.TokexTokenizer):
             self._tokenizer = tokenizer()
@@ -37,7 +37,7 @@ class Tokex:
 
         logging.debug("Input Tokens:\n%s" % tokens)
 
-        match, endIdx, output = self._grammar.match(tokens, 0)
+        match, endIdx, output = self._grammar.apply(tokens, 0)
 
         if match and (not match_entirety or endIdx == len(tokens)):
-            return output[None]
+            return output[None] or {}
