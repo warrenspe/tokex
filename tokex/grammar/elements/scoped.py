@@ -125,7 +125,7 @@ class ZeroOrOne(Grammar):
         match, new_idx, output = self._apply_sub_elements(string_tokens, idx)
 
         if match:
-            return True, new_idx, ({self.name: output} if output else None)
+            return True, new_idx, ({self.name: output} if new_idx > idx else None)
 
         return True, idx, None
 
@@ -164,8 +164,7 @@ class ZeroOrMore(Grammar):
                 break
 
             match_count += 1
-            if output:
-                outputs.append(output)
+            outputs.append(output or None)
             current_idx = new_idx
 
         return match_count, current_idx, outputs
@@ -177,9 +176,9 @@ class ZeroOrMore(Grammar):
         if idx >= len(string_tokens):
             return True, idx, None
 
-        match_count, idx, outputs = self._repeatedly_match(string_tokens, idx)
+        match_count, new_idx, outputs = self._repeatedly_match(string_tokens, idx)
 
-        return True, idx, ({self.name: outputs} if outputs else None)
+        return True, new_idx, ({self.name: outputs} if new_idx > idx else None)
 
 
 class OneOrMore(ZeroOrMore):
@@ -194,7 +193,7 @@ class OneOrMore(ZeroOrMore):
         match_count, idx, outputs = self._repeatedly_match(string_tokens, idx)
 
         if match_count > 0:
-            return True, idx, ({self.name: outputs} if outputs else None)
+            return True, idx, {self.name: outputs}
 
         return False, None, None
 

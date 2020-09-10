@@ -1,3 +1,4 @@
+import pdb
 import pprint
 import unittest
 
@@ -12,3 +13,6 @@ class TokexTestCase(unittest.TestCase):
 
     def _debug(self, *args):
         pprint.pprint(*args)
+
+    def _trace(self):
+        pdb.set_trace()
