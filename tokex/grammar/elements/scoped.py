@@ -100,6 +100,14 @@ class IteratorDelimiter(Grammar):
     def human_readable_name(self):
         return "Iterator delimiter sep { ... }"
 
+    def _apply(self, string_tokens, idx):
+        match, idx, output = super()._apply(string_tokens, idx)
+
+        if match and output is not None:
+            output = output[None]
+
+        return match, idx, output
+
 
 class ZeroOrOne(Grammar):
     """ Element which can match a contained grammar zero or one times """
@@ -126,18 +134,11 @@ class ZeroOrMore(Grammar):
     """ Element which can match a contained grammar zero or more times """
 
     can_have_delimiter = True
-    minimum_matches = 0
 
     def human_readable_name(self):
         return "Zero or More *(%s: ...)" % self.name
 
-    def _apply(self, string_tokens, idx):
-        # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
-        # we can match zero times, return True.  This allows gramars with trailing ZeroOrMore rules to match strings
-        # which don't use them.
-        if idx >= len(string_tokens):
-            return True, idx, None
-
+    def _repeatedly_match(self, string_tokens, idx):
         match_count = 0
         current_idx = idx
         outputs = []
@@ -167,20 +168,35 @@ class ZeroOrMore(Grammar):
                 outputs.append(output)
             current_idx = new_idx
 
-        if match_count >= self.minimum_matches:
-            return True, current_idx, ({self.name: outputs} if outputs else None)
+        return match_count, current_idx, outputs
 
-        return False, None, None
+    def _apply(self, string_tokens, idx):
+        # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
+        # we can match zero times, return True.  This allows gramars with trailing ZeroOrMore rules to match strings
+        # which don't use them.
+        if idx >= len(string_tokens):
+            return True, idx, None
+
+        match_count, idx, outputs = self._repeatedly_match(string_tokens, idx)
+
+        return True, idx, ({self.name: outputs} if outputs else None)
 
 
 class OneOrMore(ZeroOrMore):
     """ Element which can match a contained grammar one or more times """
 
     can_have_delimiter = True
-    minimum_matches = 1
 
     def human_readable_name(self):
         return "One or More +(%s: ...)" % self.name
+
+    def _apply(self, string_tokens, idx):
+        match_count, idx, outputs = self._repeatedly_match(string_tokens, idx)
+
+        if match_count > 0:
+            return True, idx, ({self.name: outputs} if outputs else None)
+
+        return False, None, None
 
 
 class OneOfSet(Grammar):
@@ -191,7 +207,7 @@ class OneOfSet(Grammar):
 
     def _apply(self, string_tokens, idx):
         for element in self.sub_elements:
-            match, new_idx, output = element.match(string_tokens, idx)
+            match, new_idx, output = element.apply(string_tokens, idx)
             if match:
                 return True, new_idx, output
 

@@ -1,3 +1,4 @@
+import pprint
 import unittest
 
 class TokexTestCase(unittest.TestCase):
@@ -8,3 +9,6 @@ class TokexTestCase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         pass
+
+    def _debug(self, *args):
+        pprint.pprint(*args)
