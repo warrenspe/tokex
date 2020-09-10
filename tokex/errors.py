@@ -10,7 +10,7 @@ class UnknownGrammarTokenError(GrammarParsingError):
     """ Error thrown when we are unable to tokenize a user-defined grammar. """
 
     def __init__(self, token):
-        super().__init__()
+        super(UnknownGrammarTokenError, self).__init__()
 
         self.token = token
 
@@ -22,7 +22,7 @@ class InvalidGrammarTokenFlagsError(GrammarParsingError):
     """ Error thrown when a grammar token in a user-defined grammar has an invalid flag """
 
     def __init__(self, flags, element):
-        super().__init__()
+        super(InvalidGrammarTokenFlagsError, self).__init__()
 
         self.flags = flags
         self.element = element
@@ -46,7 +46,7 @@ class MismatchedBracketsError(GrammarParsingError):
     """
 
     def __init__(self, bracket, current_scope=None):
-        super().__init__()
+        super(MismatchedBracketsError, self).__init__()
 
         self.bracket = bracket
         self.current_scope = current_scope

@@ -1,5 +1,5 @@
 # Tokex
-A Python 2 string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
+A Python 2/3 compatible string parsing library allowing for parsing of complex strings into dictionaries and lists of tokens.
 
 [Why Tokex?](https://github.com/warrenspe/Tokex/blob/master/README.md#why-tokex)  
 [Usage](https://github.com/warrenspe/Tokex/blob/master/README.md#usage)  

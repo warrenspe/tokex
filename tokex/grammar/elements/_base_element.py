@@ -3,7 +3,7 @@ import re
 
 from .. import flags
 
-class BaseElement:
+class BaseElement(object):
     """ Base class which all defined grammar element subclass from """
 
     # A set of flags which are valid to be set for this element
@@ -116,7 +116,7 @@ class BaseScopedElement(BaseElement):
     name_re = re.compile(name_re_str)
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super(BaseScopedElement, self).__init__(*args, **kwargs)
 
         # List of sub elements that this grammar element contains
         self.sub_elements = []

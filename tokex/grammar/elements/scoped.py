@@ -101,7 +101,7 @@ class IteratorDelimiter(Grammar):
         return "Iterator delimiter sep { ... }"
 
     def _apply(self, string_tokens, idx):
-        match, idx, output = super()._apply(string_tokens, idx)
+        match, idx, output = super(IteratorDelimiter, self)._apply(string_tokens, idx)
 
         if match and output is not None:
             output = output[None]
