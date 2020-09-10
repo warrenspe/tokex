@@ -73,8 +73,14 @@ class NamedElement(Grammar):
 
         self.sub_elements.append(sub_element)
 
+    def human_readable_name(self):
+        return "Named Element <%s: ...>" % self.name
+
     def _apply(self, string_tokens, idx):
-        match, new_idx, _ = self.sub_elements.apply(string_tokens, idx)
+        if not self.sub_elements:
+            return True, idx, None
+
+        match, new_idx, _ = self.sub_elements[0].apply(string_tokens, idx)
 
         if match:
             return True, new_idx, {self.name: string_tokens[idx]}
@@ -82,8 +88,24 @@ class NamedElement(Grammar):
         return False, None, None
 
 
+class IteratorDelimiter(Grammar):
+    """
+    Element which can appear inside of another scoped container and causes the parent container to only
+    match more than once if the delimiter matches between iterations
+    """
+
+    def setup(self):
+        pass
+
+    def human_readable_name(self):
+        return "Iterator delimiter sep { ... }"
+
+
 class ZeroOrOne(Grammar):
     """ Element which can match a contained grammar zero or one times """
+
+    def human_readable_name(self):
+        return "Zero or One ?(%s: ...)" % self.name
 
     def _apply(self, string_tokens, idx):
         # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
@@ -103,7 +125,11 @@ class ZeroOrOne(Grammar):
 class ZeroOrMore(Grammar):
     """ Element which can match a contained grammar zero or more times """
 
+    can_have_delimiter = True
     minimum_matches = 0
+
+    def human_readable_name(self):
+        return "Zero or More *(%s: ...)" % self.name
 
     def _apply(self, string_tokens, idx):
         # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since
@@ -116,29 +142,32 @@ class ZeroOrMore(Grammar):
         current_idx = idx
         outputs = []
         while current_idx < len(string_tokens):
-            match, new_idx, output = self._apply_sub_elements(string_tokens, idx)
+            new_idx = current_idx
 
             # If we're not processing the first match, check that any delimiter grammar we may have matches before
             # the next occurance of our grammar
-            delimiter_output = None
             if match_count > 0 and self.delimiter_grammar is not None:
-                match, idx, delimiter_output = self.delimiter_grammar.apply(string_tokens, idx)
+                match, new_idx, delimiter_output = self.delimiter_grammar.apply(string_tokens, new_idx)
 
                 if not match:
                     break
 
-            match, idx, output = Grammar.apply(self, string_tokens, idx)
+                if delimiter_output:
+                    outputs[-1].update(delimiter_output)
 
-            if not match or idx == current_idx:
+            # Try to match our sub elements
+            match, new_idx, output = self._apply_sub_elements(string_tokens, new_idx)
+
+            # If we don't match, or we do but we don't consume any tokens (ie we're stuck) exit the loop
+            if not match or new_idx == current_idx:
                 break
 
-            self.match_count += 1
-            if delimiter_output:
-                outputs[-1] = {**outputs[-1], **delimiter_output}
-            outputs.append(output)
-            current_idx = idx
+            match_count += 1
+            if output:
+                outputs.append(output)
+            current_idx = new_idx
 
-        if match_count > self.minimum_matches:
+        if match_count >= self.minimum_matches:
             return True, current_idx, ({self.name: outputs} if outputs else None)
 
         return False, None, None
@@ -147,11 +176,18 @@ class ZeroOrMore(Grammar):
 class OneOrMore(ZeroOrMore):
     """ Element which can match a contained grammar one or more times """
 
+    can_have_delimiter = True
     minimum_matches = 1
+
+    def human_readable_name(self):
+        return "One or More +(%s: ...)" % self.name
 
 
 class OneOfSet(Grammar):
     """ Element which can match any one of its contained grammars """
+
+    def human_readable_name(self):
+        return "One of Set {...}"
 
     def _apply(self, string_tokens, idx):
         for element in self.sub_elements:
