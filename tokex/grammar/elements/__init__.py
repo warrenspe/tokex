@@ -1,6 +1,6 @@
-from ._base_element import BaseElement
-from .singular import AnyString, Newline, LiteralString, RegexString
-from .scoped import Grammar, NamedElementToken, ZeroOrOne, ZeroOrMore, OneOrMore
+from ._base_element import BaseElement, BaseScopedElement
+from .singular import AnyString, Newline, StringLiteral, RegexString
+from .scoped import Grammar, NamedElement, IteratorDelimiter, ZeroOrOne, ZeroOrMore, OneOrMore, OneOfSet
 from .sub_grammar import SubGrammarDefinition, SubGrammarUsage
 
 
@@ -9,18 +9,26 @@ from .sub_grammar import SubGrammarDefinition, SubGrammarUsage
 FIRST_CHAR_VALID_FLAGS = {
     ".": AnyString,
     "~": RegexString,
-    "'": LiteralString,
-    '"': LiteralString,
+    "'": StringLiteral,
+    '"': StringLiteral,
+}
+
+FIRST_CHAR_ESCAPES = {
+    '~',
+    '"',
+    "'"
 }
 
 __all__ = [
     BaseElement,
+    BaseScopedElement,
     AnyString,
     Newline,
-    LiteralString,
+    StringLiteral,
     RegexString,
     Grammar,
-    NamedElementToken,
+    NamedElement,
+    IteratorDelimiter,
     ZeroOrOne,
     ZeroOrMore,
     OneOrMore,

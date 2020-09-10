@@ -1,6 +1,6 @@
 from .functions import compile, match
 from . import tokenizers, errors
-from .grammar.elements import flags
+from .grammar import flags
 
 __all__ = [
     compile,

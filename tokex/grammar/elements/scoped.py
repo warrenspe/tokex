@@ -1,17 +1,23 @@
 from ... import errors
 
-from ._base_grammar_element import BaseScopedElement
+from ._base_element import BaseScopedElement
 from .singular import BaseSingular
 
-class Grammar(BaseScopedElement):
-    """ Optionally named element which contains other grammar elements. """
 
-    human_readable_name = 'Named Section (name: ...)'
-    name = None
+class Grammar(BaseScopedElement):
+    """ Named element which contains other grammar elements. """
+
+    can_have_delimiter = False
     delimiter_grammar = None
 
     def setup(self):
-        self.name = self.token_str[self.token_str.index("("):] or None
+        if self.token_str:
+            self.name = self.name_re.search(self.token_str)
+            if self.name:
+                self.name = self.name.group()
+
+    def human_readable_name(self):
+        return "Named Section (%s: ...)" % self.name
 
     def _apply_sub_elements(self, string_tokens, idx):
         """
@@ -47,12 +53,12 @@ class Grammar(BaseScopedElement):
         return False, None, None
 
 
-class NamedElementToken(Grammar):
-    human_readable_name = 'Any String [ . ]'
+class NamedElement(Grammar):
+    """ Named element which contains another singular element """
 
     def add_sub_element(self, sub_element):
         """
-        Adds a sub element to this NamedElementToken.  This is used in places such as zero or more for example,
+        Adds a sub element to this NamedElement.  This is used in places such as zero or more for example,
         where the zero or more element will contain one or more sub elements
 
         Inputs: sub_element - The element to add as a sub element of this element.

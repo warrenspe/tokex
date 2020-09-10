@@ -5,8 +5,9 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
     def test_parse_tokens(self):
         grammar = """
-            'a' "b" `c`
+            'a' "b" s'c'
         """
+
         token_grammar = tokex.compile(grammar)
 
         self.assertIsNotNone(token_grammar.match('a b c'))
@@ -24,37 +25,38 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         self.assertIsNone(token_grammar.match(""))
 
         grammar = """
-            _ _str_ _notstr_ _!a\_c_
+            . q. u.!'a_c'
         """
         regex_grammar = tokex.compile(grammar)
 
         self.assertIsNotNone(regex_grammar.match('anything "string" notstring nota_c'))
         self.assertIsNotNone(regex_grammar.match("anything 'string' notstring nota_c"))
-        self.assertTrue(regex_grammar.grammar.match(["anything", "'string'", "notstring", "nota\\_c"], 0)[0])
+        self.assertTrue(regex_grammar._grammar.apply(["anything", "'string'", "notstring", "nota\\_c"], 0)[0])
 
         self.assertIsNone(regex_grammar.match('anything "string" notstring a_c'))
         self.assertIsNone(regex_grammar.match('anything "string" "notstring" nota_c'))
         self.assertIsNone(regex_grammar.match('anything "string" \'notstring\' nota_c'))
         self.assertIsNone(regex_grammar.match('anything string notstring nota_c'))
 
-        self.assertIsNone(tokex.match("$caseSensitive$", "casesensitive"))
-        self.assertIsNone(tokex.match("$caseSensitive$", "CASESENSITIVE"))
-        self.assertIsNotNone(tokex.match("$caseSensitive$", "caseSensitive"))
-        self.assertIsNotNone(tokex.match("^caseSensitive^", "casesensitive"))
-        self.assertIsNotNone(tokex.match("^caseSensitive^", "CASESENSITIVE"))
-
+        self.assertIsNone(tokex.match("s~caseSensitive~", "casesensitive"))
+        self.assertIsNone(tokex.match("s~caseSensitive~", "CASESENSITIVE"))
+        self.assertIsNotNone(tokex.match("i~caseSensitive~", "caseSensitive"))
+        self.assertIsNotNone(tokex.match("i~caseSensitive~", "casesensitive"))
+        self.assertIsNotNone(tokex.match("i~caseSensitive~", "CASESENSITIVE"))
 
 
     def test_parse_named_token(self):
         grammar = """
             <a1: 'a'>
-            <a2: _>
+            <a2: .>
             <a3: '>'>
             <a4: '<'>
-            <a5: `>`>
-            <a6: _!>_>
+            <a5: i'>'>
+            <q:>
+            <q2: >
+            <a6: !'>'>
             <a7: 'q'>
-            <a7: <b: 'b'>>
+            <a7: 'b'>
         """
 
         named_token_grammar = tokex.compile(grammar)
@@ -134,27 +136,27 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
     def test_parse_zero_or_one(self):
         grammar = """
-            (?'a')
-            (?
-                <b: 'b'>
+            ?(a: 'a')
+            ?(b:
+                <bi: 'b'>
             )
-            (?
-                (c: <c: 'c'>)
+            ?(c:
+                (ci: <cii: 'c'>)
             )
-            (?
-                (?
-                    (?
-                        (?
-                            <d: 'd'>
+            ?(d:
+                ?(di:
+                    ?(dii:
+                        ?(diii:
+                            <dv: 'd'>
                         )
                     )
                 )
             )
-            (?
-                (?
-                    (?
-                        (?
-                            (e:<e: 'e'>)
+            ?(e:
+                ?(ei:
+                    ?(eii:
+                        ?(eiii:
+                            (ev:<evi: 'e'>)
                         )
                     )
                 )
@@ -164,37 +166,37 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         zero_or_one_grammar = tokex.compile(grammar)
 
         self.assertDictEqual(zero_or_one_grammar.match('a b c d e'), {
-            'b': 'b',
-            'c': {'c': 'c'},
-            'd': 'd',
-            'e': {'e': 'e'}
+            'b': {'bi': 'b'},
+            'c': {'ci': {'cii': 'c'}},
+            'd': {'di': {'dii': {'diii': {'dv': 'd'}}}},
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('b c d e'), {
-            'b': 'b',
-            'c': {'c': 'c'},
-            'd': 'd',
-            'e': {'e': 'e'}
+            'b': {'bi': 'b'},
+            'c': {'ci': {'cii': 'c'}},
+            'd': {'di': {'dii': {'diii': {'dv': 'd'}}}},
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('c d e'), {
-            'c': {'c': 'c'},
-            'd': 'd',
-            'e': {'e': 'e'}
+            'c': {'ci': {'cii': 'c'}},
+            'd': {'di': {'dii': {'diii': {'dv': 'd'}}}},
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('a b e'), {
-            'b': 'b',
-            'e': {'e': 'e'}
+            'b': {'bi': 'b'},
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('d e'), {
-            'd': 'd',
-            'e': {'e': 'e'}
+            'd': {'di': {'dii': {'diii': {'dv': 'd'}}}},
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('e'), {
-            'e': {'e': 'e'}
+            'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
         })
 
         self.assertDictEqual(zero_or_one_grammar.match(''), {})
@@ -206,31 +208,31 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
     def test_parse_zero_or_more(self):
         grammar = """
-            (*
+            *(a:
                 'a'
             )
-            (*
-                <b: 'b'>
+            *(b:
+                <bi: 'b'>
             )
-            (*
-                (c:
+            *(c:
+                (c1:
                    <c2: 'c2'>
                    <c3: 'c3'>
                 )
             )
-            (*
-                (*
-                    (*
-                        (*
+            *(d:
+                *(di:
+                    *(dii:
+                        *(diii:
                             <d: 'd'>
                         )
                     )
                 )
             )
-            (*
-                (*
-                    (*
-                        (*
+            *(e:
+                *(ei:
+                    *(eii:
+                        *(eiii:
                             (e:<e: 'e'>)
                         )
                     )
@@ -241,23 +243,23 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         zero_or_more_grammar = tokex.compile(grammar)
 
         self.assertDictEqual(zero_or_more_grammar.match('a b c2 c3 d e'), {
-            'b': ['b'],
-            'c': [{'c2': 'c2', 'c3': 'c3'}],
-            'd': [[[['d']]]],
-            'e': [[[[{'e': 'e'}]]]]
+            'b': [{'bi': 'b'}],
+            'c': [{'c1': {'c2': 'c2', 'c3': 'c3'}}],
+            'd': [{'di': [{'dii': [{'diii': [{'d': 'd'}]}]}]}],
+            'e': [{'ei': [{'eii': [{'eiii': [{'e': {'e': 'e'}}]}]}]}],
         })
 
         self.assertDictEqual(zero_or_more_grammar.match('a b d e'), {
-            'b': ['b'],
-            'd': [[[['d']]]],
-            'e': [[[[{'e': 'e'}]]]]
+            'b': [{'bi': 'b'}],
+            'd': [{'di': [{'dii': [{'diii': [{'d': 'd'}]}]}]}],
+            'e': [{'ei': [{'eii': [{'eiii': [{'e': {'e': 'e'}}]}]}]}],
         })
 
         self.assertDictEqual(zero_or_more_grammar.match('b c2 c3 d e'), {
-            'b': ['b'],
-            'c': [{'c2': 'c2', 'c3': 'c3'}],
-            'd': [[[['d']]]],
-            'e': [[[[{'e': 'e'}]]]]
+            'b': [{'bi': 'b'}],
+            'c': [{'c1': {'c2': 'c2', 'c3': 'c3'}}],
+            'd': [{'di': [{'dii': [{'diii': [{'d': 'd'}]}]}]}],
+            'e': [{'ei': [{'eii': [{'eiii': [{'e': {'e': 'e'}}]}]}]}],
         })
 
         self.assertDictEqual(zero_or_more_grammar.match('c2 c3 d e'), {
@@ -302,7 +304,7 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
 
         grammar = """
-            (*
+            *(
                 <a:'a'> [<b:'b'>]
             )
         """
@@ -319,31 +321,31 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
     def test_parse_one_or_more(self):
         grammar = """
-            (+
+            +(
                 'a'
             )
-            (+
+            +(
                 <b: 'b'>
             )
-            (+
+            +(
                 (c:
                    <c2: 'c2'>
                    <c3: 'c3'>
                 )
             )
-            (+
-                (+
-                    (+
-                        (+
+            +(
+                +(
+                    +(
+                        +(
                             <d: 'd'>
                         )
                     )
                 )
             )
-            (+
-                (+
-                    (+
-                        (+
+            +(
+                +(
+                    +(
+                        +(
                             (e:<e: 'e'>)
                         )
                     )
@@ -361,7 +363,7 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         })
 
 
-        grammar = "(+ <a:'a'> [<b:'b'>])"
+        grammar = "+( <a:'a'> [<b:'b'>])"
 
         one_or_more_grammar = tokex.compile(grammar)
 
@@ -380,7 +382,7 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
 
         grammar = """
-            (+
+            +(
                 <a:'a'> [<b:'b'>]
             )
         """
@@ -423,7 +425,7 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         self.assertIsNone(one_of_set_grammar.match('b2'))
 
         grammar = """
-            (*
+            *(
                 {
                     <a:'a'>
                     (b: <b1:'b1'> <b2:'b2'>)

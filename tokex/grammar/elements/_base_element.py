@@ -1,21 +1,56 @@
 import logging
+import re
+
+from .. import flags
 
 class BaseElement:
     """ Base class which all defined grammar element subclass from """
 
-    human_readable_name = None
+    # A set of flags which are valid to be set for this element
+    valid_flags = None
 
-    # Regular expression string which matches valid token names (ex: named sub grammars, named tokens, etc)
-    valid_token_name_re = "[a-zA-Z0-9_-]+"
-
-    def __init__(self, token_str, flags):
+    def __init__(self, token_str="", _flags=None, default_flags=flags.DEFAULTS):
         self.token_str = token_str
-        self._flags = flags
+        # Records what flags were defined on the grammar
+        self._grammar_flags = _flags
+        # Records what flags will be used with the element; combines grammar flags with default flags
+        self._flags = set(_flags) if _flags else None
+
+        default_flags = default_flags or flags.DEFAULTS
+
+        # Check that 2+ mutually exclusive flags weren't given
+        if self._flags:
+            for m_ex_set in flags.__MUTUALLY_EXCLUSIVE__:
+                if len(m_ex_set.difference(self._flags)) < len(m_ex_set) - 1:
+                    raise Exception("Mutually exclusive flags given: %s" % ", ".join(m_ex_set))
+
+        # Set default flags
+        if self.valid_flags and default_flags:
+            for flag in default_flags:
+                # Check if the default flag appears in any mutually exclusive set
+                for m_ex_set in flags.__MUTUALLY_EXCLUSIVE__:
+                    if flag in m_ex_set:
+                        # If it does, check if we were given any of the other alternatives.  If not, apply the default
+                        if len(m_ex_set.difference(self._flags or [])) == len(m_ex_set):
+                            self._flags = self._flags or set()
+                            self._flags.add(flag)
+
+                        break
+
+                # If we're in the else, the flag wasn't in any mutually exclusive set.  Apply it
+                else:
+                    self._flags = self._flags or set()
+                    self._flags.add(flag)
 
         self.setup()
 
     def __repr__(self):
-        return "<%s>" % self.human_readable_name
+        return "<[%s]>" % self.human_readable_name()
+
+    def human_readable_name(self):
+        """ Returns a string which can be displayed to users, showing what sort of element they're looking at """
+
+        return "Tokex Element"
 
     def _apply(self, string_tokens, idx):
         """
@@ -33,6 +68,9 @@ class BaseElement:
         """
 
         raise NotImplementedError
+
+    def setup(self):
+        pass
 
     def apply(self, string_tokens, idx):
         """
@@ -54,22 +92,28 @@ class BaseElement:
 
         match, idx, output = self._apply(string_tokens, idx)
 
-        if idx < len(string_tokens):
+        if idx is not None and idx < len(string_tokens):
             logging.debug("Matched: %s\n" % match)
 
         return match, idx, output
 
-    def has_flag(self, flag): # TODO default flags
+    def has_flag(self, flag):
         """
         Returns a boolean indicating whether or not this grammar element was initialized with the given flag
         or, if not, if the flag was set as a default
         """
 
-        return flag in self._flags
+        return flag in (self._flags or '')
 
 
 class BaseScopedElement(BaseElement):
     """ Base class for grammar elements which can have sub elements within them """
+
+    name = None
+
+    # Regular expression string which matches valid token names (ex: named sub grammars, named tokens, etc)
+    name_re_str = "[a-zA-Z0-9_-]+"
+    name_re = re.compile(name_re_str)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

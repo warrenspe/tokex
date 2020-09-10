@@ -1,4 +1,4 @@
-class TokexError:
+class TokexError(Exception):
     """ Base class for all tokex-specific errors """
 
 
