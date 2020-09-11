@@ -10,14 +10,14 @@ tokex exposes two API functions: compile and match.
 tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
 Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
 
-If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#Sub Grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
 A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
 
 tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
 **tokex.match** compiles a new grammar and runs it against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
 
 If *match_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
-If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#Sub Grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
 A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
 
 ### Tokex Object
@@ -268,7 +268,7 @@ Matches if the `re` regular expression it contains matches the input token.
 
 ### Any String
 Matches any non-whitespace input token.
-Note: This element will not match a newline (if newlines have been [tokenized](#Input String Tokenization)).
+Note: This element will not match a newline (if newlines have been [tokenized](#input-string-tokenization)).
 
 #### Syntax
 `.`
@@ -288,7 +288,7 @@ Note: This element will not match a newline (if newlines have been [tokenized](#
 
 ### Newline
 Matches a newline in an input string .
-Note that Newline elements will only match newlines in input strings if newlines are tokenized by setting `tokenize_newlines=True` on the tokenizer. See [Input String Tokenization](#Input String Tokenization)
+Note that Newline elements will only match newlines in input strings if newlines are tokenized by setting `tokenize_newlines=True` on the tokenizer. See [Input String Tokenization](#input-string-tokenization)
 
 #### Syntax
 `$`
