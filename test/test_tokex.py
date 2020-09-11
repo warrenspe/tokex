@@ -1,6 +1,6 @@
 import _test_case
 import tokex
-from tokex.parser import Tokex
+from tokex.tokex_class import Tokex
 
 class TestTokex(_test_case.TokexTestCase):
 

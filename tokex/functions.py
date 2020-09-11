@@ -1,4 +1,4 @@
-from .parser import Tokex
+from .tokex_class import Tokex
 from .tokenizers import tokenizer
 
 
