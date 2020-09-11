@@ -130,6 +130,7 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
             q.
             u.
             !"a`'\"$^"
+            $
         """)
 
         self.assertIsInstance(test_grammar.sub_elements[0], elements.StringLiteral)
@@ -200,6 +201,9 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertIsInstance(test_grammar.sub_elements[17], elements.StringLiteral)
         self.assertEqual(test_grammar.sub_elements[17].token_str, 'a`\'"$^')
         self.assertEqual(test_grammar.sub_elements[17]._grammar_flags, {flags.NOT})
+
+        self.assertIsInstance(test_grammar.sub_elements[18], elements.Newline)
+        self.assertIsNone(test_grammar.sub_elements[18]._grammar_flags)
 
     def test_parse_comment(self):
         test_grammar = construct_grammar(r"""

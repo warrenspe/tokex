@@ -62,7 +62,7 @@ class Newline(BaseSingular):
     def _apply(self, string_tokens, idx):
         to_match = self._apply_first(string_tokens, idx)
 
-        if to_match == r"\n":
+        if to_match == "\n":
             return True, idx + 1, None
 
         return False, None, None

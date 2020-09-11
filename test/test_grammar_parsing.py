@@ -44,6 +44,12 @@ class TestGrammarParsing(_test_case.TokexTestCase):
         self.assertIsNotNone(tokex.match("i~caseSensitive~", "casesensitive"))
         self.assertIsNotNone(tokex.match("i~caseSensitive~", "CASESENSITIVE"))
 
+        # Test newlines
+        grammar = "'test' $ 'test'"
+        newline_grammar = tokex.compile(grammar, tokenizer=tokex.tokenizers.TokexTokenizer(tokenize_newlines=True))
+        self.assertIsNotNone(newline_grammar.match("test \n test"))
+        self.assertIsNone(newline_grammar.match("test \\n test"))
+
 
     def test_parse_named_token(self):
         grammar = """
