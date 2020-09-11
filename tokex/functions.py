@@ -1,11 +1,11 @@
 from .grammar import flags
 from .tokex_class import Tokex
-from .tokenizers import tokenizer
+from .tokenizers.tokenizer import TokexTokenizer
 
 
 def compile(input_grammar,
             allow_sub_grammar_definitions=True,
-            tokenizer=tokenizer.TokexTokenizer,
+            tokenizer=TokexTokenizer,
             default_flags=flags.DEFAULTS):
     """
     Constructs and returns an instance of _StringParser for repeated parsing of strings using the given grammar.
@@ -31,7 +31,7 @@ def match(input_grammar,
           input_string,
           match_entirety=True,
           allow_sub_grammar_definitions=True,
-          tokenizer=tokenizer.TokexTokenizer,
+          tokenizer=TokexTokenizer,
           default_flags=flags.DEFAULTS,
           debug=False):
     """

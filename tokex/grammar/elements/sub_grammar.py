@@ -1,7 +1,10 @@
 from ._base_element import BaseScopedElement
 
 class SubGrammarDefinition(BaseScopedElement):
-    """ Element for sub grammar scopes. Only used during grammar creation, these never actually makes it into a Grammar object """
+    """
+    Element for sub grammar scopes.
+    Only used during grammar creation, these never actually makes it into a Grammar object
+    """
 
     def human_readable_name(self):
         return "Sub Grammar def %s { ... }" % self.name
@@ -15,7 +18,10 @@ class SubGrammarDefinition(BaseScopedElement):
 
 
 class SubGrammarUsage(BaseScopedElement):
-    """ Element for sub grammar replacements. Only used during grammar creation, these never actually makes it into a Grammar object """
+    """
+    Element for sub grammar replacements.
+    Only used during grammar creation, these never actually makes it into a Grammar object
+    """
 
     def human_readable_name(self):
         return "Sub Grammar Usage %s()" % self.name

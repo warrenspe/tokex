@@ -55,14 +55,14 @@ class MismatchedBracketsError(GrammarParsingError):
         if self.current_scope:
             return "Mismatched bracket given: %s for scoped element: %r" % (self.bracket, self.current_scope)
 
-        else:
-            return "Mismatched bracket given: %s" % self.bracket
+        return "Mismatched bracket given: %s" % self.bracket
 
 
 class SubGrammarError(GrammarParsingError):
     """ Raised when a user-defined grammar has invalid sub grammars within it """
 
     def __init__(self, msg):
+        super(SubGrammarError, self).__init__(self)
         self.msg = msg
 
     def __str__(self):

@@ -20,18 +20,18 @@ FIRST_CHAR_ESCAPES = {
 }
 
 __all__ = [
-    BaseElement,
-    BaseScopedElement,
-    AnyString,
-    Newline,
-    StringLiteral,
-    RegexString,
-    Grammar,
-    NamedElement,
-    IteratorDelimiter,
-    ZeroOrOne,
-    ZeroOrMore,
-    OneOrMore,
-    SubGrammarDefinition,
-    SubGrammarUsage
+    "BaseElement",
+    "BaseScopedElement",
+    "AnyString",
+    "Newline",
+    "StringLiteral",
+    "RegexString",
+    "Grammar",
+    "NamedElement",
+    "IteratorDelimiter",
+    "ZeroOrOne",
+    "ZeroOrMore",
+    "OneOrMore",
+    "SubGrammarDefinition",
+    "SubGrammarUsage"
 ]

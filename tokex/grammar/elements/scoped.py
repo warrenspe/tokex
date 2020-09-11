@@ -25,7 +25,8 @@ class Grammar(BaseScopedElement):
 
         Outputs: If our sub elements don't match the string tokens, False, None, None
                  Otherwise: A triple containing: {
-                     match: A boolean depicting whether or not this construct matches the iterable at the current position.
+                     match: A boolean depicting whether or not this construct matches the
+                            iterable at the current position.
                      new_idx: The index this construct ceased matching upon the iterable, if match is True. Else None
                      output: A list of all returned dictionaries from the sub elements
                  )
@@ -65,8 +66,9 @@ class NamedElement(Grammar):
                               Should be a subclass of BaseGrammar
         """
 
-        if len(self.sub_elements):
-            raise errors.GrammarParsingError("%r cannot contain more than one element, already contains: %r" % (self, self.sub_elements[0]))
+        if self.sub_elements:
+            raise errors.GrammarParsingError("%r cannot contain more than one element, already contains: %r" %
+                                             (self, self.sub_elements[0]))
 
         if not isinstance(sub_element, BaseSingular):
             raise errors.GrammarParsingError("%r can only contain singular elements, not %r" % (self, sub_element))
@@ -178,7 +180,7 @@ class ZeroOrMore(Grammar):
         if idx >= len(string_tokens):
             return True, idx, None
 
-        match_count, new_idx, outputs = self._repeatedly_match(string_tokens, idx)
+        _, new_idx, outputs = self._repeatedly_match(string_tokens, idx)
 
         return True, new_idx, ({self.name: outputs} if new_idx > idx else None)
 

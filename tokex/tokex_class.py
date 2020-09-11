@@ -3,9 +3,9 @@ import logging
 
 from .grammar import flags, parse
 from . import tokenizers
-from .logger import logger, TemporaryLogLevel
+from .logger import LOGGER, TemporaryLogLevel
 
-class Tokex:
+class Tokex(object):
     _grammar = None
     _tokenizer = None
 
@@ -35,12 +35,14 @@ class Tokex:
         Outputs: A dictionary representing the output of parsing if the string matches the grammar, else None.
         """
 
-        with TemporaryLogLevel(logging.DEBUG if debug else logger.getEffectiveLevel()):
+        with TemporaryLogLevel(logging.DEBUG if debug else LOGGER.getEffectiveLevel()):
             tokens = self._tokenizer.tokenize(input_string)
 
-            logger.debug("Input Tokens:\n%s" % tokens)
+            LOGGER.debug("Input Tokens:\n%s", tokens)
 
-            match, endIdx, output = self._grammar.apply(tokens, 0)
+            match, end_idx, output = self._grammar.apply(tokens, 0)
 
-            if match and (not match_entirety or endIdx == len(tokens)):
+            if match and (not match_entirety or end_idx == len(tokens)):
                 return output[None] or {}
+
+            return None

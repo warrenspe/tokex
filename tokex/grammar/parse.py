@@ -60,7 +60,7 @@ def tokenize_grammar(grammar_string):
     ))
 
     matched_tokens = []
-    all_flags_re = re.compile("[%s]+" % "".join(flags.__all__))
+    all_flags_re = re.compile("[%s]+" % "".join((getattr(flags, flag) for flag in flags.__all__)))
     escape_re = re.compile(r"\\(.)")
 
     for match in re.finditer(pattern, grammar_string, re.I):
@@ -102,11 +102,11 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
     """
     Function which accepts a user-defined grammar string and returns an instance of Grammar representing it.
 
-    Inputs: grammar_string                - The user-defined grammar string representing the grammar we should construct.
+    Inputs: grammar_string - The user-defined grammar string representing the grammar we should construct.
             allow_sub_grammar_definitions - A boolean, indicating whether or not we should process sub grammars
                                             See the README for more information on what sub grammars are used for
-                                            and the dangers of allowing them when parsing untrusted third-party grammars.
-            default_flags                 - Can be passed as a set of flags, which will set the defaults for all elements in the grammar
+                                            and the dangers of allowing them when parsing untrusted third-party grammars
+            default_flags - Can be passed as a set of flags, which will set the defaults for all elements in the grammar
 
     Outputs: An instance of a Grammar class which can be used to parse input strings.
     """
@@ -122,45 +122,45 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
     sub_grammar_stack = [elements.SubGrammarDefinition(default_flags=default_flags)]
 
     for token_idx, token_dict in enumerate(grammar_tokens):
-        if not len(grammar_stack):
+        if not grammar_stack:
             raise errors.MismatchedBracketsError(grammar_tokens[token_idx - 1])
 
-        flags = token_dict["flags"]
+        token_flags = token_dict["flags"]
         token = token_dict["token"]
 
         # Openers
         if token == "{":
-            element = elements.OneOfSet(token, flags, default_flags)
+            element = elements.OneOfSet(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[:2] == "*(":
-            element = elements.ZeroOrMore(token, flags, default_flags)
+            element = elements.ZeroOrMore(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[:2] == "+(":
-            element = elements.OneOrMore(token, flags, default_flags)
+            element = elements.OneOrMore(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[:2] == "?(":
-            element = elements.ZeroOrOne(token, flags, default_flags)
+            element = elements.ZeroOrOne(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[0] == "(":
-            element = elements.Grammar(token, flags, default_flags)
+            element = elements.Grammar(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[0] == "<":
-            element = elements.NamedElement(token, flags, default_flags)
+            element = elements.NamedElement(token, token_flags, default_flags)
             grammar_stack[-1].add_sub_element(element)
             grammar_stack.append(element)
 
         elif token[:3].lower() == "sep":
-            element = elements.IteratorDelimiter(token, flags, default_flags)
+            element = elements.IteratorDelimiter(token, token_flags, default_flags)
             if grammar_stack[-1].delimiter_grammar:
                 raise errors.GrammarParsingError("Multiple %r defined for %r" % (element, grammar_stack[-1]))
 
@@ -172,7 +172,8 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
 
         # Closers
         elif token == "}":
-            if isinstance(grammar_stack[-1], (elements.SubGrammarDefinition, elements.IteratorDelimiter, elements.OneOfSet)):
+            if isinstance(grammar_stack[-1],
+                          (elements.SubGrammarDefinition, elements.IteratorDelimiter, elements.OneOfSet)):
                 if isinstance(grammar_stack[-1], elements.SubGrammarDefinition):
                     new_sub_grammar = sub_grammar_stack.pop()
                     sub_grammar_stack[-1].sub_grammars[new_sub_grammar.name] = new_sub_grammar
@@ -183,7 +184,8 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
                 raise errors.MismatchedBracketsError(token, grammar_stack[-1])
 
         elif token == ")":
-            if isinstance(grammar_stack[-1], (elements.ZeroOrMore, elements.ZeroOrOne, elements.OneOrMore, elements.Grammar)):
+            if isinstance(grammar_stack[-1],
+                          (elements.ZeroOrMore, elements.ZeroOrOne, elements.OneOrMore, elements.Grammar)):
                 grammar_stack.pop()
 
             else:
@@ -198,19 +200,19 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
 
         # Singular tokens
         elif token[0] in ("'", '"'):
-            grammar_stack[-1].add_sub_element(elements.StringLiteral(token, flags, default_flags))
+            grammar_stack[-1].add_sub_element(elements.StringLiteral(token, token_flags, default_flags))
 
         elif token[0] == "~":
-            grammar_stack[-1].add_sub_element(elements.RegexString(token, flags, default_flags))
+            grammar_stack[-1].add_sub_element(elements.RegexString(token, token_flags, default_flags))
 
         elif token[0] in ("'", '"'):
-            grammar_stack[-1].add_sub_element(elements.StringLiteral(token, flags, default_flags))
+            grammar_stack[-1].add_sub_element(elements.StringLiteral(token, token_flags, default_flags))
 
         elif token == "$":
-            grammar_stack[-1].add_sub_element(elements.Newline(token, flags, default_flags))
+            grammar_stack[-1].add_sub_element(elements.Newline(token, token_flags, default_flags))
 
         elif token == ".":
-            grammar_stack[-1].add_sub_element(elements.AnyString(token, flags, default_flags))
+            grammar_stack[-1].add_sub_element(elements.AnyString(token, token_flags, default_flags))
 
         # Sub Grammar open
         elif token[:3].lower() == "def":
@@ -222,14 +224,14 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
                 if not isinstance(element, elements.SubGrammarDefinition):
                     raise errors.SubGrammarError("Sub grammars cannot be defined within a %r element" % element)
 
-            element = elements.SubGrammarDefinition(token, flags, default_flags)
+            element = elements.SubGrammarDefinition(token, token_flags, default_flags)
             grammar_stack.append(element)
             sub_grammar_stack.append(element)
 
         # Sub Grammar Usage
         elif token[-1] == ")":
             # Find the referenced sub_grammar
-            sub_grammar_name = elements.SubGrammarUsage(token, flags, default_flags).name
+            sub_grammar_name = elements.SubGrammarUsage(token, token_flags, default_flags).name
 
             for parent_sub_grammar in reversed(sub_grammar_stack):
                 if sub_grammar_name in parent_sub_grammar.sub_grammars:
@@ -245,7 +247,7 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
         else:
             raise errors.GrammarParsingError("Unknown token: %s" % repr(token))
 
-        if len(grammar_stack) == 0:
+        if not grammar_stack:
             raise errors.MismatchedBracketsError(token)
 
     if len(grammar_stack) > 1:

@@ -15,14 +15,14 @@ __MUTUALLY_EXCLUSIVE__ = (
     {QUOTED, UNQUOTED}
 )
 
-DEFAULTS = {
+DEFAULTS = frozenset((
     CASE_INSENSITIVE,
-}
+))
 
 __all__ = [
-    NOT,
-    QUOTED,
-    UNQUOTED,
-    CASE_SENSITIVE,
-    CASE_INSENSITIVE
+    "NOT",
+    "QUOTED",
+    "UNQUOTED",
+    "CASE_SENSITIVE",
+    "CASE_INSENSITIVE"
 ]
