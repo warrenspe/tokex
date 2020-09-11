@@ -42,7 +42,7 @@ Tokex.**match(**_input_string,_ _match_entirety=True_, _debug=False_**)**
 > 
 > If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
 > 
-> If debug is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
+> If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
