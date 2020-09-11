@@ -12,25 +12,25 @@ tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _to
 > Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.  If you intend to call match several times using the same input grammar, using a precompiled Tokex object can be slightly more performant, as the tokex grammar won't have to be parsed each time
 >
 > If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
-> 
+>
 > A custom tokenizer can be passed through the _tokenizer_ parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
-> 
+>
 >  _default\_flags_ can be passed as a set of strings of flags to apply to valid elements by default. Default flags can be overridden by specifying an opposing flag on elements in the grammar.  See [Grammar Notes](#grammar-notes) for the set of flags which are applied by default.
-> 
+>
 > If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True,_ _tokenizer=tokex.tokenizers.TokexTokenizer,_ _default\_flags=tokex.flags.DEFAULTS,_ _debug=True_**)**
 
 > Matches a given tokex grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
-> 
+>
 > If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
-> 
+>
 > If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
-> 
+>
 >  _default\_flags_ can be passed as a set of strings of flags to apply to valid elements by default. Default flags can be overridden by specifying an opposing flag on elements in the grammar.  See [Grammar Notes](#grammar-notes) for the set of flags which are applied by default
-> 
+>
 > A custom tokenizer can be passed through the _tokenizer_ parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
-> 
+>
 > If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 ### Tokex Object
@@ -39,9 +39,9 @@ A Tokex object (constructed using tokex.compile) has the following methods on it
 Tokex.**match(**_input_string,_ _match_entirety=True_, _debug=False_**)**
 
 > Tokex.match runs a precompiled grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
-> 
+>
 > If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
-> 
+>
 > If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 ## Usage Examples
@@ -210,19 +210,21 @@ Below is a description of each type of grammar element that can be used to const
   These names can consist of any characters from the following sets: a-z, A-Z, 0-9, \_, and -
 - Use \ to escape characters within certain elements.  For example:
   - "a string with an \" embedded quote"
-  - ~a regular expression with an \~ embedded tilde~
+  - \~a regular expression with an \~ embedded tilde\~
   Note that this also means that you have to escape slashes within regular expressions.  Two slashes in a grammar = 1 slash in the regular expression.  So a total of 4 are needed to match a slash character using the regular expression
-  - ~a regular expression with an \\\\ embedded slash~
+  - \~a regular expression with an \\\\ embedded slash\~
 - Comments can be included in grammars in a similar fashion to python by using #.  They can appear anywhere in a line and all characters afterwards are considered a part of the comment
 - Some flags are set by default; these can be overridden by passing a custom set of default flags to match/compile:
-  - Case Insensitive (**i**)
+  - Case Insensitive **i**
 
 ### String Literal
 Matches an input token exactly.
 
 #### Syntax
 `"String Literal"`
+
 or
+
 `'String Literal'`
 
 #### Valid Flags
@@ -236,7 +238,7 @@ or
   - `u"Unquoted String"` - If the input token is wrapped by ' or " it will not match the grammar element.
 - Not: **!**
   - `!"Not String"` - The input token matches the grammar element if it does not match the given string.
-  - Note: **!** is applied after any other given flags, for example `!q"asdf"` matches any string which is not "asdf" or 'asdf'
+  - Note: **!** is applied after any other given flags, for example `!q"asdf"` matches any string which is not `"asdf"` or `'asdf'`
 
 #### Examples
 ```
@@ -344,7 +346,9 @@ Note: A Zero Or One section can be given a name or not.  If it is, all the named
 
 #### Syntax
 `?(name: ... )`
+
 or
+
 `?( ... )`
 
 
@@ -371,6 +375,7 @@ Notes:
 
 #### Syntax
 `*(name: ... )`
+
 `*(name: ... sep { ... } )` (the grammar within the `sep { ... }` must occur between each match of the section)
 
 #### Examples
@@ -387,7 +392,7 @@ Notes:
 >>> zero_or_one_grammar.match("a, b c") # Does not match, as there's no , between b and c
 ```
 
-### One Or More
+### One Or More Section
 Acts the same way that a regular Named Section does, however will match an input string one or more times.  In other words, the elements it contains are required, and can be present one or more times.
 
 Notes:
@@ -396,6 +401,7 @@ Notes:
 
 #### Syntax
 `+(name: ... )`
+
 `+(name: ... sep { ... } )` (the grammar within the `sep { ... }` must occur between each match of the section)
 
 #### Examples
@@ -461,11 +467,11 @@ Defines a named sub grammar which can be later referenced by using: `sub_grammar
   namespace of the sub grammar they were defined in.  Sub grammars defined outside of any
   other sub grammars are considered global. Example:
 ```
-def grammarA {
-    def grammarB { 'Grammar B Only exists inside grammarA' }
-    grammarB() '<- This works'
+def grammar_a {
+    def grammar_b { 'Grammar B Only exists inside grammar_a' }
+    grammar_b() '<- This works'
 }
-grammarB() "<- This raises an exception; as it is undefined outside of grammarA's scope."
+grammar_b() "<- This raises an exception; as it is undefined outside of grammar_a's scope."
 ```
 - Defined sub grammars will be expanded when the grammar is compiled.  This, combined with
   the ability to arbitrarily recurse defined sub grammars means that grammar compilation is
@@ -473,7 +479,7 @@ grammarB() "<- This raises an exception; as it is undefined outside of grammarA'
   Because of this, you should either not compile untrusted 3rd party grammars, or you should
   disable sub grammar definitions when compiling 3rd party grammars (see documentation below).
 - Defined sub grammars can occur anywhere within your grammar, however the act of defining a
-  sub grammar does not make any modifications to your grammar until it is used.  For example:
+  sub grammar does not have any impact on your tokex grammar until it is used.  For example:
   `'a' def b { 'b' } 'c'` does not match `'a b c'`, but does match `'a c'`
   `'a' def b { 'b' } b() 'c'` matches `'a b c'`
 - Defined sub grammars cannot be applied until their declaration is finished.  For example,
@@ -495,6 +501,3 @@ def a {
 }
 ```
 (`a()` cannot appear until the sub grammar 'a' is completed)
-
-## Notes
-- To debug why a grammar matches/doesn't match a particular input string, set python's logging level to DEBUG before calling match on the input string.  Detailed debugging information will be written to STDERR.
