@@ -25,6 +25,8 @@ def tokenize_grammar(grammar_string):
         r"sep\s*\{",
         # ZeroOrMore, OneOrMore, ZeroOrOne, and Named Grammar open
         r"[*+?]?\(\s*%s\s*:" % name_re_str,
+        # ZeroOrOne Unnamed Grammar open
+        r"\?\(",
         # Named Token open
         r"<\s*%s?\s*:" % name_re_str,
         # One of Set open

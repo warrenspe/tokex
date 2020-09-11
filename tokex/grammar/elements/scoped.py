@@ -125,7 +125,9 @@ class ZeroOrOne(Grammar):
         match, new_idx, output = self._apply_sub_elements(string_tokens, idx)
 
         if match:
-            return True, new_idx, ({self.name: output} if new_idx > idx else None)
+            if self.name:
+                return True, new_idx, ({self.name: output} if new_idx > idx else None)
+            return True, new_idx, output
 
         return True, idx, None
 

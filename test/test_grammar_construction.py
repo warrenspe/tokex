@@ -17,6 +17,7 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
 : 'g' 'h' 'i' )
             +(1 : 'g' 'h' 'i' )
             ?(ab_12:'d' 'e' 'f' )
+            ?('d' 'e' 'f' )
             *(a:'g' 'h' 'i' )
             +(a: 'g' 'h' 'i' )
             *(a:'g' 'h' 'i' sep {'a'})
@@ -44,6 +45,32 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
             ~someRegex ~
             ~ someRegex ~
         """
+
+        grammar_tokens = [t["token"] for t in tokenize_grammar(grammar_string)]
+
+        self.assertEqual(grammar_tokens, [
+            "{", "'a'", "'b'", "'c'", "}",
+            "?(a:", "'d'", "'e'", "'f'", ")",
+            "*(b\n:", "'g'", "'h'", "'i'", ")",
+            "+(1 :", "'g'", "'h'", "'i'", ")",
+            "?(ab_12:", "'d'", "'e'", "'f'", ")",
+            "?(", "'d'", "'e'", "'f'", ")",
+            "*(a:", "'g'", "'h'", "'i'", ")",
+            "+(a:", "'g'", "'h'", "'i'", ")",
+            "*(a:", "'g'", "'h'", "'i'", "sep {", "'a'", "}", ")",
+            "+(a:", "'g'", "'h'", "'i'", "sep{", "(b:", "'b'", ")", "}", ")",
+            "( abc:", "'abc'", "'123'", ")",
+            "(\n             def:", "'def'", "'456'", ")",
+            "(ghi:", "'ghi'", "'789'", ")",
+            "< abc:", "'123'", ">",
+            "<\n             def:", "'456'", ">",
+            "<ghi:", "'789'", ">",
+            "def abc {", "'123'", "}",
+            "def\n                def{", "'456'", "}",
+            "def    ghi\n                {", "'789'", "}",
+            "$",
+            "~someRegex~", "~ someRegex~", "~someRegex ~", "~ someRegex ~",
+        ])
 
         flags_grammar_string = r"""
             !'abc'
@@ -84,31 +111,6 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
             i"str\`ing"
             i""
         """
-
-        grammar_tokens = [t["token"] for t in tokenize_grammar(grammar_string)]
-
-        self.assertEqual(grammar_tokens, [
-            "{", "'a'", "'b'", "'c'", "}",
-            "?(a:", "'d'", "'e'", "'f'", ")",
-            "*(b\n:", "'g'", "'h'", "'i'", ")",
-            "+(1 :", "'g'", "'h'", "'i'", ")",
-            "?(ab_12:", "'d'", "'e'", "'f'", ")",
-            "*(a:", "'g'", "'h'", "'i'", ")",
-            "+(a:", "'g'", "'h'", "'i'", ")",
-            "*(a:", "'g'", "'h'", "'i'", "sep {", "'a'", "}", ")",
-            "+(a:", "'g'", "'h'", "'i'", "sep{", "(b:", "'b'", ")", "}", ")",
-            "( abc:", "'abc'", "'123'", ")",
-            "(\n             def:", "'def'", "'456'", ")",
-            "(ghi:", "'ghi'", "'789'", ")",
-            "< abc:", "'123'", ">",
-            "<\n             def:", "'456'", ">",
-            "<ghi:", "'789'", ">",
-            "def abc {", "'123'", "}",
-            "def\n                def{", "'456'", "}",
-            "def    ghi\n                {", "'789'", "}",
-            "$",
-            "~someRegex~", "~ someRegex~", "~someRegex ~", "~ someRegex ~",
-        ])
 
         grammar_tokens = ["%s|%s" % ("".join(sorted(t["flags"] or [])), t["token"]) for t in tokenize_grammar(flags_grammar_string)]
 
@@ -348,6 +350,8 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
               ?(b_: 'a' !"b" q'c')
               ?(-c:. q. u. )
               ?(  de:{$ .} )
+              ?(.)
+              ?()
             )
         """)
 
@@ -359,6 +363,10 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertEqual(test_grammar.sub_elements[0].sub_elements[1].name, '-c')
         self.assertIsInstance(test_grammar.sub_elements[0].sub_elements[2], elements.ZeroOrOne)
         self.assertEqual(test_grammar.sub_elements[0].sub_elements[2].name, 'de')
+        self.assertIsInstance(test_grammar.sub_elements[0].sub_elements[3], elements.ZeroOrOne)
+        self.assertIsNone(test_grammar.sub_elements[0].sub_elements[3].name)
+        self.assertIsInstance(test_grammar.sub_elements[0].sub_elements[4], elements.ZeroOrOne)
+        self.assertIsNone(test_grammar.sub_elements[0].sub_elements[4].name)
 
         se = test_grammar.sub_elements[0].sub_elements
 
@@ -393,6 +401,11 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
 
         self.assertIsInstance(se[2].sub_elements[0].sub_elements[1], elements.AnyString)
         self.assertIsNone(se[2].sub_elements[0].sub_elements[1]._grammar_flags)
+
+        self.assertIsInstance(se[3].sub_elements[0], elements.AnyString)
+        self.assertIsNone(se[3].sub_elements[0]._grammar_flags)
+
+        self.assertEqual(len(se[4].sub_elements), 0)
 
         self.assertRaises(errors.GrammarParsingError, construct_grammar, "?(a:")
         self.assertRaises(errors.GrammarParsingError, construct_grammar, ")")

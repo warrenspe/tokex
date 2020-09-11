@@ -16,7 +16,7 @@ A custom tokenizer can be passed through the *tokenizer* parameter. If given it 
 tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
 **tokex.match** compiles a new grammar and runs it against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
 
-If *match_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
 If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
 A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
 
@@ -26,7 +26,7 @@ A Tokex object (constructed using tokex.compile) has the following methods on it
 Tokex.**match(**_input_string,_ _match_entirety=True,_)**
 **Tokex.match** runs a precompiled grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
 
-If *match_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
 
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
@@ -34,103 +34,97 @@ The following examples will show parsing of tokens in simplified SQL queries
 **Drop Query**
 ```
 >>> import tokex
->>> dropTokex = tokex.compile("""
+>>> drop_tokex = tokex.compile("""
     'DROP'
     <target: ~table|database~>
-    ?(ifExists: 'IF' 'EXISTS')
+    ?(if_exists: 'IF' 'EXISTS')
     <name: .>
 """)
 
->>> dropTokex.match("DROP DATABASE testDatabase")
-{'target': 'DATABASE', 'name': 'testDatabase'}
+>>> drop_tokex.match("DROP DATABASE test_database")
+{'target': 'DATABASE', 'name': 'test_database'}
 
->>> dropTokex.match("DROP TABLE IF EXISTS testTable")
-{'target': 'TABLE', 'ifExists': None, 'name': 'testTable'}
+>>> drop_tokex.match("DROP TABLE IF EXISTS test_table")
+{'target': 'TABLE', 'if_exists': None, 'name': 'test_table'}
 
->>> dropTokex.match("DROP testTable") is None # Missing DATABASE or TABLE token
+>>> drop_tokex.match("DROP test_table") is None # Missing DATABASE or TABLE token
 True
 ```
 
 **Update Query**
 ```
->>> updateTokex = tokex.compile(r"""
-    'UPDATE' <tableName: .> "SET"
+>>> update_tokex = tokex.compile(r"""
+    'UPDATE' <table_name: .> "SET"
     +(columns:
         <name: .> "=" <value: .> sep { ',' }
     )
-    ?(where: 'WHERE' +(clauses: <clause: !~(ORDER)|(LIMIT)~> ) )
+    ?('WHERE' +(where_clauses: <token: !~(ORDER)|(LIMIT)~> ) )
     ?(order: 'ORDER' 'BY' <column: .> <direction: ~(ASC)|(DESC)~> )
-    ?(limit: 'LIMIT' <value: ~\\d+~> )
+    ?('LIMIT' <limit: ~\\d+~> )
 """)
 
->>> updateTokex.match("UPDATE test SET a=1, b=2, c = 3 WHERE a > 0 AND b = 2 ORDER BY c DESC limit 1")
+>>> update_tokex.match("UPDATE test SET a=1, b=2, c = 3 WHERE a > 0 AND b = 2 ORDER BY c DESC limit 1")
 {
-    'tableName': 'test',
+    'table_name': 'test',
     'columns': [
         {'name': 'a', 'value': '1'},
         {'name': 'b', 'value': '2'},
         {'name': 'c', 'value': '3'}
     ],
-    'where': {
-        'clauses': [
-            {'clause': 'a'},
-            {'clause': '>'},
-            {'clause': '0'},
-            {'clause': 'AND'},
-            {'clause': 'b'},
-            {'clause': '='},
-            {'clause': '2'}
-        ]
-    },
+    'where_clauses': [
+        {'token': 'a'}, {'token': '>'}, {'token': '0'},
+        {'token': 'AND'},
+        {'token': 'b'}, {'token': '='}, {'token': '2'}
+    ],
     'order': {'column': 'c', 'direction': 'DESC'},
-    'limit': {'value': '1'}
-}
-
->>> updateTokex.match("UPDATE test SET a=1 LIMIT 1")
-{
-    'tableName': 'test',
-    'columnSets': [{'columnToSet': 'a', 'value': '1'}],
     'limit': '1'
 }
 
->>> updateTokex.match("UPDATE testTable SET WHERE a > 1") is None # Missing a column to set
+>>> update_tokex.match("UPDATE test SET a=1 LIMIT 1")
+{
+    'table_name': 'test',
+    'columns': [{'name': 'a', 'value': '1'}],
+    'limit': '1'
+}
+
+>>> update_tokex.match("UPDATE test_table SET WHERE a > 1") is None # Missing a column to set
 True
 ```
 
 **Select Query**
 ```
->>> selectTokex = tokex.compile(r"""
-    def joinCondition {
+>>> select_tokex = tokex.compile(r"""
+    def join_condition {
         +(conditions:  <condition: !~(INNER)|(LEFT)|(WHERE)|(ORDER)|(LIMIT)~>)
     }
-    def whereCondition {
+    def where_condition {
         +(conditions: <condition: !~(ORDER)|(LIMIT)~> )
     }
 
     'SELECT' ?(distinct: "DISTINCT")
-        +(selectAttributes: <name: !~from~> sep { ',' } )
+        +(select_attributes: <name: !"from"> sep { ',' } )
     'FROM' <table: .>
     *(joins:
         {
-            (inner: "INNER" "JOIN" <table: .> "ON" joinCondition() )
-            (left: "LEFT" "JOIN" <table: .> "ON" joinCondition() )
+            (inner: "INNER" "JOIN" <table: .> "ON" join_condition() )
+            (left: "LEFT" "JOIN" <table: .> "ON" join_condition() )
         }
     )
-    ?(where: "WHERE" whereCondition() )
-    ?(order: "ORDER" "BY" <orderByColumn: .> <orderByDirection: ~(ASC)|(DESC)~> )
-    ?(limit: "LIMIT" <limit: ~\\d+~> )
+    ?(where: "WHERE" where_condition() )
+    ?(order: "ORDER" "BY" <order_by_column: .> <order_by_direction: ~(ASC)|(DESC)~> )
+    ?("LIMIT" <limit: ~\\d+~> )
 """)
 
->>> selectTokex.match("SELECT * FROM test limit 1")
+>>> select_tokex.match("SELECT * FROM test limit 1")
 {
+    'select_attributes': [{'name': '*'}],
     'table': 'test',
-    'selectAttributes': [{'name': '*'}],
-    'limit': {'limit': '1'}
+    'limit': '1'
 }
 
->>> selectTokex.match("""
+>>> select_tokex.match("""
     SELECT a, b, c
-    FROM testTable
+    FROM test_table
     INNER JOIN a ON a = t
     INNER JOIN b ON b = a
     LEFT JOIN c ON c = a
@@ -139,23 +133,17 @@ True
     LIMIT 2
 """)
 {
-    'selectAttributes': [
-        {'name': 'a'},
-        {'name': 'b'},
-        {'name': 'c'}
-    ],
-    'table': 'testTable',
+    'select_attributes': [{'name': 'a'}, {'name': 'b'}, {'name': 'c'}],
+    'table': 'test_table',
     'joins': [
         {
             'inner': {
-                'table': 'a',
-                'conditions': [{'condition': 'a'}, {'condition': '='}, {'condition': 't'}]
+                'table': 'a', 'conditions': [{'condition': 'a'}, {'condition': '='}, {'condition': 't'}]
             }
         },
         {
             'inner': {
-                'table': 'b',
-                'conditions': [{'condition': 'b'}, {'condition': '='}, {'condition': 'a'}]
+                'table': 'b', 'conditions': [{'condition': 'b'}, {'condition': '='}, {'condition': 'a'}]
             }
         },
         {
@@ -166,17 +154,19 @@ True
         }
     ],
     'where': {
-        'condition': [
+        'conditions': [
             {'condition': 'a'}, {'condition': '>'}, {'condition': '1'},
             {'condition': 'AND'},
             {'condition': 'b'}, {'condition': '<'}, {'condition': '2'}
         ]
     },
-    'order': {'orderByColumn': 'a', 'orderByDirection': 'DESC'},
-    'limit': {'limit': '2'}
+    'order': {
+        'order_by_column': 'a', 'order_by_direction': 'DESC'
+    },
+    'limit': '2'
 }
 
->>> selectTokex.match("SELECT FROM test") is None # Missing select columns
+>>> select_tokex.match("SELECT FROM test") is None # Missing select columns
 True
 ```
 
@@ -232,9 +222,9 @@ or
 
 #### Examples
 ```
->>> stringLiteralTokex = tokex.compile("'abc' 'def' 'g'")
->>> stringLiteralTokex.match("abc def g") # Matches
->>> stringLiteralTokex.match("g def abc") is None # Does not match
+>>> string_literal_tokex = tokex.compile("'abc' 'def' 'g'")
+>>> string_literal_tokex.match("abc def g") # Matches
+>>> string_literal_tokex.match("g def abc") is None # Does not match
 ```
 
 ### Regular Expressions
@@ -259,11 +249,11 @@ Matches if the `re` regular expression it contains matches the input token.
 
 #### Examples
 ```
->>> regularExpressionTokex = tokex.compile("~(yes)|(no)|(maybe)~")
->>> regularExpressionTokex.match("maybe") # Matches
+>>> regular_expression_tokex = tokex.compile("~(yes)|(no)|(maybe)~")
+>>> regular_expression_tokex.match("maybe") # Matches
 
->>> numericRegularExpressionTokex = tokex.compile(r"~\\d+~")
->>> numericRegularExpressionTokex.match("4570") # Matches
+>>> numeric_regular_expression_tokex = tokex.compile(r"~\\d+~")
+>>> numeric_regular_expression_tokex.match("4570") # Matches
 ```
 
 ### Any String
@@ -281,9 +271,9 @@ Note: This element will not match a newline (if newlines have been [tokenized](#
 
 #### Examples
 ```
->>> anyStringTokex = tokex.compile(".")
->>> anyStringTokex.match("maybe") # Matches
->>> anyStringTokex.match("'ANYTHING'") # Matches
+>>> any_string_tokex = tokex.compile(".")
+>>> any_string_tokex.match("maybe") # Matches
+>>> any_string_tokex.match("'ANYTHING'") # Matches
 ```
 
 ### Newline
@@ -295,9 +285,9 @@ Note that Newline elements will only match newlines in input strings if newlines
 
 #### Examples
 ```
->>> newlineTokex = tokex.compile(". $ .", tokenizer=tokex.tokenizers.TokexTokenizer(tokenize_newlines=True))
->>> newlineTokex.match("something \n else ") # Matches
->>> newlineTokex.match("something else ") # Does not match
+>>> newline_tokex = tokex.compile(". $ .", tokenizer=tokex.tokenizers.TokexTokenizer(tokenize_newlines=True))
+>>> newline_tokex.match("something \n else ") # Matches
+>>> newline_tokex.match("something else ") # Does not match
 ```
 
 ### Named Tokens
@@ -309,8 +299,8 @@ Note: Only singular elements (documented above, not below) can be wrapped inside
 
 #### Examples
 ```
->>> namedTokenTokex = tokex.compile("<token: .>")
->>> namedTokenTokex.match("some_token")
+>>> named_token_tokex = tokex.compile("<token: .>")
+>>> named_token_tokex.match("some_token")
 {'token': 'some_token'}
 ```
 
@@ -324,24 +314,34 @@ A named section does not actually match any tokens in an input string, instead i
 
 #### Examples
 ```
->>> namedGrammarTokex = tokex.compile("(test: 'a' <middle: .> 'c')")
->>> namedGrammarTokex.match("a b c") # Matches
+>>> named_grammar_tokex = tokex.compile("(test: 'a' <middle: .> 'c')")
+>>> named_grammar_tokex.match("a b c") # Matches
 {'test': {'middle': 'b'}}
->>> namedGrammarTokex.match("a b") # Does not match
+>>> named_grammar_tokex.match("a b") # Does not match
 ```
 
-### Zero Or One Named Section
+### Zero Or One (optionally Named) Section
 Acts the same way that a regular Named Section does, however will match an input string zero or one times.  In other words, the elements it contains are optional.
+Note: A Zero Or One section can be given a name or not.  If it is, all the named tokens within it will be grouped up into a dictionary mapped to by the name you give the section.  If it isn't, all named matches will be populated in the nearest parent named grammar
 
 #### Syntax
 `?(name: ... )`
+or
+`?( ... )`
+
 
 #### Examples
 ```
->>> zeroOrOneTokex = tokex.compile("'prefix' ?(middle: <middle_element: !'suffix'>) 'suffix'")
->>> zeroOrOneTokex.match("prefix middle_token suffix") # Matches
-{'middle': {'middle_element': 'middle_token'}}
->>> zeroOrOneTokex.match("prefix suffix") # Still matches
+>>> zero_or_one_tokex = tokex.compile("'prefix' ?( <middle_element: !'suffix'>) 'suffix'")
+>>> zero_or_one_tokex.match("prefix middle_token suffix") # Matches
+{'middle_element': 'middle_token'}
+>>> zero_or_one_tokex.match("prefix suffix") # Still matches
+
+>>> zero_or_one_tokex = tokex.compile("'SELECT' ?(distinct: 'distinct')")
+>>> zero_or_one_tokex.match("select distinct") # Matches
+{'distinct': None}
+>>> zero_or_one_tokex.match("select") # Matches
+{}
 ```
 
 ### Zero Or More Named Section
@@ -357,16 +357,16 @@ Notes:
 
 #### Examples
 ```
->>> zeroOrMoreGrammar = tokex.compile("*(as: <a: 'a'>) *(bs: <b: 'b'>)")
->>> zeroOrMoreGrammar.match("a a b b b")
+>>> zero_or_one_grammar = tokex.compile("*(as: <a: 'a'>) *(bs: <b: 'b'>)")
+>>> zero_or_one_grammar.match("a a b b b")
 {'as': [{'a': 'a'}, {'a': 'a'}], 'bs': [{'b': 'b'}, {'b': 'b'}, {'b': 'b'}]}
->>> zeroOrMoreGrammar.match("b b")
+>>> zero_or_one_grammar.match("b b")
 {'bs': [{'b': 'b'}, {'b': 'b'}]}
 
->>> zeroOrMoreGrammar = tokex.compile("*(letters: <letter: .> sep { ',' })")
->>> zeroOrMoreGrammar.match("a, b, c")
+>>> zero_or_one_grammar = tokex.compile("*(letters: <letter: .> sep { ',' })")
+>>> zero_or_one_grammar.match("a, b, c")
 {'letters': [{'letter': 'a'}, {'letter': 'b'}, {'letter': 'c'}]}
->>> zeroOrMoreGrammar.match("a, b c") # Does not match, as there's no , between b and c
+>>> zero_or_one_grammar.match("a, b c") # Does not match, as there's no , between b and c
 ```
 
 ### One Or More
@@ -382,15 +382,15 @@ Notes:
 
 #### Examples
 ```
->>> oneOrMoreGrammar = tokex.compile("+(as: <a: 'a'>) +(bs: <b: 'b'>)")
->>> oneOrMoreGrammar.match("a a b b b")
+>>> one_or_more_grammar = tokex.compile("+(as: <a: 'a'>) +(bs: <b: 'b'>)")
+>>> one_or_more_grammar.match("a a b b b")
 {'as': [{'a': 'a'}, {'a': 'a'}], 'bs': [{'b': 'b'}, {'b': 'b'}, {'b': 'b'}]}
->>> oneOrMoreGrammar.match("b b") # Does not match, as there are no a's
+>>> one_or_more_grammar.match("b b") # Does not match, as there are no a's
 
->>> oneOrMoreGrammar = tokex.compile("+(letters: <letter: .> sep { ',' })")
->>> oneOrMoreGrammar.match("a, b, c")
+>>> one_or_more_grammar = tokex.compile("+(letters: <letter: .> sep { ',' })")
+>>> one_or_more_grammar.match("a, b, c")
 {'letters': [{'letter': 'a'}, {'letter': 'b'}, {'letter': 'c'}]}
->>> oneOrMoreGrammar.match("a, b c") # Does not match, as there's no , between b and c
+>>> one_or_more_grammar.match("a, b c") # Does not match, as there's no , between b and c
 ```
 
 ### One of Set
@@ -403,7 +403,7 @@ Will attempt to match each grammar in order until one matches.
 #### Examples
 Match one grammar of a set, zero or many times:
 ```
->>> oneOfASetTokex = tokex.compile("""
+>>> one_of_set_tokex = tokex.compile("""
     'ALTER' 'TABLE' <table_name: .>
     *(conditions:
         {
@@ -415,7 +415,7 @@ Match one grammar of a set, zero or many times:
         } sep { ',' }
     )
 """)
->>> oneOfASetTokex.match("""
+>>> one_of_set_tokex.match("""
     ALTER TABLE test
     ADD COLUMN a int,
     REMOVE COLUMN a_old,

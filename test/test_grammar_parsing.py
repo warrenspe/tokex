@@ -151,16 +151,23 @@ class TestGrammarParsing(_test_case.TokexTestCase):
                     )
                 )
             )
+            ?(
+                ?(
+                    <outer: 'q'>
+                )
+                ?()
+            )
         """
 
         zero_or_one_grammar = tokex.compile(grammar)
 
-        self.assertDictEqual(zero_or_one_grammar.match('a b c d e'), {
+        self.assertDictEqual(zero_or_one_grammar.match('a b c d e q'), {
             'a': None,
             'b': {'bi': 'b'},
             'c': {'ci': {'cii': 'c'}},
             'd': {'di': {'dii': {'diii': {'dv': 'd'}}}},
             'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
+            'outer': 'q'
         })
 
         self.assertDictEqual(zero_or_one_grammar.match('b c d e'), {
@@ -189,6 +196,10 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
         self.assertDictEqual(zero_or_one_grammar.match('e'), {
             'e': {'ei': {'eii': {'eiii': {'ev': {'evi': 'e'}}}}},
+        })
+
+        self.assertDictEqual(zero_or_one_grammar.match('q'), {
+            'outer': 'q'
         })
 
         self.assertDictEqual(zero_or_one_grammar.match(''), {})
