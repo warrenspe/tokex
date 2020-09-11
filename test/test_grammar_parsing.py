@@ -451,11 +451,11 @@ class TestGrammarParsing(_test_case.TokexTestCase):
 
         self.assertDictEqual(one_of_set_grammar.match('a a a a c c c d d d d d e e e e e e b1 b2 a a a b1 b2'), {
             '_': [
-                *([{'a': 'a'}] * 4),
-                *([{'c': 'c'}] * 3),
-                *([None] * 11),
+                {'a': 'a'}, {'a': 'a'}, {'a': 'a'}, {'a': 'a'},
+                {'c': 'c'}, {'c': 'c'}, {'c': 'c'},
+                None, None, None, None, None, None, None, None, None, None, None,
                 {'b': {'b1': 'b1', 'b2': 'b2'}},
-                *([{'a': 'a'}] * 3),
+                {'a': 'a'}, {'a': 'a'}, {'a': 'a'},
                 {'b': {'b1': 'b1', 'b2': 'b2'}}
             ]
         })
