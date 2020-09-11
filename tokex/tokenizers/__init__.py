@@ -1,5 +1,6 @@
-from .tokenizer import TokexTokenizer
+from .tokenizer import TokexTokenizer, NumericTokenizer
 
 __all__ = [
-    TokexTokenizer
+    TokexTokenizer,
+    NumericTokenizer
 ]

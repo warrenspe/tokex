@@ -209,15 +209,15 @@ or
 `'String Literal'`
 
 #### Valid Flags
-- Case Sensitive **s**
+- Case Sensitive: **s**
   - `s"Case Sensitive String"` - Case of input token must also match case of grammar element to match
-- Case Insensitive **i**
-  - `s"Case Insensitive String"` - Case of input token does not need to match case of grammar element to match
-- Quoted **q**
-  - `i"Quoted String"` - Input token must be additionally be wrapped by either ' or " to match the grammar element.
-- Unquoted **u**
-  - `i"Unquoted String"` - If the input token is wrapped by ' or " it will not match the grammar element.
-- Not **!**
+- Case Insensitive: **i**
+  - `i"Case Insensitive String"` - Case of input token does not need to match case of grammar element to match
+- Quoted: **q**
+  - `q"Quoted String"` - Input token must be additionally be wrapped by either ' or " to match the grammar element.
+- Unquoted: **u**
+  - `u"Unquoted String"` - If the input token is wrapped by ' or " it will not match the grammar element.
+- Not: **!**
   - `!"Not String"` - The input token matches the grammar element if it does not match the given string.
   - Note: **!** is applied after any other given flags, for example `!q"asdf"` matches any string which is not "asdf" or 'asdf'
 
@@ -235,15 +235,15 @@ Matches if the `re` regular expression it contains matches the input token.
 `~Regular Expression~`
 
 #### Valid Flags
-- Case Sensitive **s**
+- Case Sensitive: **s**
   - `s~Case Sensitive Regular Expression~` - Case of input token must also match case of grammar element expression to match
-- Case Insensitive **i**
-  - `s~Case Insensitive Regular Expression~` - Case of input token does not need to match case of grammar element expression to match
-- Quoted **q**
-  - `i~Quoted Regular Expression~` - Input token must be additionally be wrapped by either ' or " to match the grammar element expression.
-- Unquoted **u**
-  - `i~Unquoted Regular Expression~` - If the input token is wrapped by ' or " it will not match the grammar element expression.
-- Not **!**
+- Case Insensitive: **i**
+  - `i~Case Insensitive Regular Expression~` - Case of input token does not need to match case of grammar element expression to match
+- Quoted: **q**
+  - `q~Quoted Regular Expression~` - Input token must be additionally be wrapped by either ' or " to match the grammar element expression.
+- Unquoted: **u**
+  - `u~Unquoted Regular Expression~` - If the input token is wrapped by ' or " it will not match the grammar element expression.
+- Not: **!**
   - `!~Not Regular Expression~` - The input token matches the grammar element if it does not match the grammar element expression.
   - Note: **!** is applied after any other given flags, for example `!q"asdf"` matches any string which is not "asdf" or 'asdf'
 
@@ -265,9 +265,9 @@ Note: This element will not match a newline (if newlines have been [tokenized](#
 `.`
 
 #### Valid Flags
-- Quoted **q**
+- Quoted: **q**
   - `q.` - Matches any quoted (wrapped by either ' or ") non-whitespace input token
-- Unquoted **u**
+- Unquoted: **u**
   - `u.` - Matches any unquoted (not wrapped by either ' or ") non-whitespace input token
 
 #### Examples

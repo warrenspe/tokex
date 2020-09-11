@@ -54,3 +54,15 @@ class TokexTokenizer(object):
             input_string,
             flags=re.MULTILINE
         )
+
+
+class NumericTokenizer(TokexTokenizer):
+    """
+    Tokenizers which keeps numeric values together as a single token
+    """
+
+    tokenizer_regexes = (
+        r'"[^"]*"',
+        r"'[^']*'",
+        r"\S+",
+    )
