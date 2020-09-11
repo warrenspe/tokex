@@ -7,17 +7,18 @@ Admittedly, with a complex enough regex, Python's built-in [re](https://docs.pyt
 ## Usage
 tokex exposes two API functions: compile and match.
 
-**tokex.compile** accepts a grammar and returns an object with a match function, which accepts two parameters: inputString and matchEntirety (see tokex.match).  tokex.compile is useful in much the same way as re.compile, for compiling a grammar that will be used to match strings multiple times.  tokex.compile accepts three parameters:
-- grammar: (String) The grammar to compile.  This is similar in concept to the pattern parameter passed to re.compile.
-- allowSubGrammarDefinitions: (Boolean) Default True.  Toggles support for named sub grammars (See below).  tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars.  If this is ever required, sub grammar support should be turned off to mitigate this type of attack.
-- tokenizer: (tokexTokenizer subclass or instance) Optional: Either a class or an instance, descending from tokenizers.Tokenizer.tokexTokenizer which will be used to tokenize input strings to the parser.  Uses tokenizers.Tokenizer.tokexTokenizer by default if none passed.
+tokex.**compile(***input\_grammar,* *allow\_sub\_grammar\_definitions=True*, *tokenizer=tokex.tokenizers.TokexTokenizer***)**
+Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
 
-**tokex.match** compiles a grammar and runs it against an input string and returns either None or a dictionary of named matches found within the input string, depending on whether or not the grammar matches the input string.  tokex.match accepts five parameters:
-- grammar: (String) See tokex.compile.
-- inputString: (String) to match the grammar against.
-- matchEntirety: (Boolean) Default True.  If True, requires that the entire input string be matched by the grammar.  If set to False, allows for tokens to be remaining at the end of the input string, as long as the grammar matches from the beginning.
-- allowSubGrammarDefinitions: (Boolean) See tokex.compile.
-- tokenizer: (tokexTokenizer subclass or instance) Optional: See tokex.compile.
+If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#Sub Grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
+
+tokex.**match(***input\_grammar,* *input_string,* *match_entirety=True,* *allow\_sub\_grammar\_definitions=True*, *tokenizer=tokex.tokenizers.TokexTokenizer***)**
+**tokex.match** compiles a grammar and runs it against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
+
+If *match_entirety is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#Sub Grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
 
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
@@ -423,7 +424,7 @@ Match one grammar of a set, zero or many times:
 
 ```
 
-### Sub Grammar
+### Sub Grammars
 Defines a named sub grammar which can be later referenced by using: `sub_grammar_name()`.
 
 #### Syntax
