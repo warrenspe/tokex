@@ -7,13 +7,13 @@ Admittedly, with a complex enough regex, Python's built-in [re](https://docs.pyt
 ## Usage
 tokex exposes two API functions: compile and match.
 
-tokex.**compile(***input\_grammar,* *allow\_sub\_grammar\_definitions=True*, *tokenizer=tokex.tokenizers.TokexTokenizer***)**
+tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
 Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
 
 If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#Sub Grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
 A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
 
-tokex.**match(***input\_grammar,* *input_string,* *match_entirety=True,* *allow\_sub\_grammar\_definitions=True*, *tokenizer=tokex.tokenizers.TokexTokenizer***)**
+tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
 **tokex.match** compiles a grammar and runs it against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
 
 If *match_entirety is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
