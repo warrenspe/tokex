@@ -1,3 +1,4 @@
+from .logger import logger
 from .functions import compile, match
 from . import tokenizers, errors
 from .grammar import flags
@@ -7,5 +8,6 @@ __all__ = [
     match,
     tokenizers,
     errors,
-    flags
+    flags,
+    logger
 ]

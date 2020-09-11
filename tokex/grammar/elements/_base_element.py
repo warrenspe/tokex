@@ -1,6 +1,6 @@
-import logging
 import re
 
+from ...logger import logger
 from .. import flags
 
 class BaseElement(object):
@@ -88,12 +88,12 @@ class BaseElement(object):
         """
 
         if idx < len(string_tokens):
-            logging.debug("%s testing match for: %s\n" % (self, string_tokens[idx]))
+            logger.debug("%s testing match for: %s\n" % (self, string_tokens[idx]))
 
         match, idx, output = self._apply(string_tokens, idx)
 
         if idx is not None and idx < len(string_tokens):
-            logging.debug("%s Matched: %s\n" % (self, match))
+            logger.debug("%s Matched: %s\n" % (self, match))
 
         return match, idx, output
 
