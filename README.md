@@ -7,31 +7,42 @@ Admittedly, with a complex enough regex, Python's built-in [re](https://docs.pyt
 ## Usage
 tokex exposes two API functions: compile and match.
 
-tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer,_ _default\_flags=tokex.flags.DEFAULTS_**)**
+tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer,_ _default\_flags=tokex.flags.DEFAULTS,_ _debug=True_**)**
 
-Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
+> Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
+>
+> If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+> 
+> A custom tokenizer can be passed through the _tokenizer_ parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
+> 
+>  _default\_flags_ can be passed as a set of strings of flags to apply to valid elements by default. Default flags can be overridden by specifying an opposing flag on elements in the grammar.  See [Grammar Notes](#grammar-notes) for the set of flags which are applied by default.
+> 
+> If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
-If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True,_ _tokenizer=tokex.tokenizers.TokexTokenizer,_ _default\_flags=tokex.flags.DEFAULTS,_ _debug=True_**)**
 
-A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
-
-tokex.**match(**_input\_grammar,_ _input_string,_ _match_entirety=True,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer_**)**
-
-**tokex.match** compiles a new grammar and runs it against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
-
-If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
-
-If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
-A custom tokenizer can be passed through the *tokenizer* parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
+> Matches a given tokex grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
+> 
+> If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+> 
+> If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
+> 
+>  _default\_flags_ can be passed as a set of strings of flags to apply to valid elements by default. Default flags can be overridden by specifying an opposing flag on elements in the grammar.  See [Grammar Notes](#grammar-notes) for the set of flags which are applied by default
+> 
+> A custom tokenizer can be passed through the _tokenizer_ parameter. If given it should be set to an instance/subclass of tokex.tokenizers.TokexTokenizer.
+> 
+> If _debug_ is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 ### Tokex Object
 A Tokex object (constructed using tokex.compile) has the following methods on it:
 
-Tokex.**match(**_input_string,_ _match_entirety=True,_)**
+Tokex.**match(**_input_string,_ _match_entirety=True_, _debug=False_**)**
 
-**Tokex.match** runs a precompiled grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
-
-If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+> Tokex.match runs a precompiled grammar against an input string and returns either a dictionary of named matches if the grammar matches the input string or None if it doesn't.
+> 
+> If *match\_entirety* is True the grammar will only match the input string if the entire input string is consumed.  If it is False, trailing tokens at the end of the input string may be ignored if they do not match the grammar.
+> 
+> If debug is passed as True, it will enable the logging logger (named "tokex"), which will print out debugging information regarding the grammar as it processes an input string.
 
 ## Usage Examples
 The following examples will show parsing of tokens in simplified SQL queries
@@ -192,7 +203,7 @@ True
 
 ## Defining A Grammar
 Below is a description of each type of grammar element that can be used to construct a tokex grammar.
-#### Notes
+#### Grammar Notes
 - Certain elements can take names, for example
   - Sub Grammars: `def grammar_name { ... }`
   - Named Sections: `(section_name: ... )`
