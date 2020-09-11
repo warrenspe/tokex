@@ -29,16 +29,14 @@ class TokexTokenizer(object):
                                      Only has an effect if tokenize_newlines is passed and True
         """
 
+        self.tokenize_newlines = tokenize_newlines
+        self.ignore_empty_lines = ignore_empty_lines
+
         if tokenizer_regexes:
             self.tokenizer_regexes = tokenizer_regexes
 
-        if tokenize_newlines:
-            if ignore_empty_lines:
-                self.tokenizer_regexes = list(self.tokenizer_regexes) + [r"(?<!^)\n"]
-
-            else:
-                self.tokenizer_regexes = list(self.tokenizer_regexes) + [r"\n"]
-
+        if self.tokenize_newlines:
+            self.tokenizer_regexes = list(self.tokenizer_regexes) + [r"\n"]
 
     def tokenize(self, input_string):
         """
@@ -49,11 +47,18 @@ class TokexTokenizer(object):
         Outputs: A list of tokens from input_string.
         """
 
-        return re.findall(
+        tokens = re.findall(
             "(%s)" % "|".join(self.tokenizer_regexes),
             input_string,
             flags=re.MULTILINE
         )
+
+        if self.tokenize_newlines and self.ignore_empty_lines:
+            for idx in reversed(range(len(tokens))):
+                if tokens[idx] == "\n" and ((idx > 0 and tokens[idx - 1] == "\n") or idx == 0):
+                    tokens.pop(idx)
+
+        return tokens
 
 
 class NumericTokenizer(TokexTokenizer):

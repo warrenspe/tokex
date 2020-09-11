@@ -5,10 +5,10 @@ import _test_case
 
 class TestTokenizer(_test_case.TokexTestCase):
 
-    input_string = r"""
+    input_string = """
         separate words which should be tokenized _separate_ly_
         (words) [to] {be} <tokenized> #separately# $from$ ;their; |surrounding| !characters!
-
+    \n \t\n\n
         == <= >= != ... !=...<=
     """
 
@@ -29,7 +29,7 @@ class TestTokenizer(_test_case.TokexTestCase):
         self.assertEqual(tokenizer.tokenize(self.input_string), [
             "\n", "separate", "words", "which", "should", "be", "tokenized", "_separate_ly_", "\n",
             "(", "words", ")", "[", "to", "]", "{", "be", "}", "<", "tokenized", ">", "#", "separately", "#",
-            "$", "from", "$", ";", "their", ";", "|", "surrounding", "|", "!", "characters", "!", "\n", "\n",
+            "$", "from", "$", ";", "their", ";", "|", "surrounding", "|", "!", "characters", "!", "\n", "\n", "\n", "\n", "\n",
             "==", "<=", ">=", "!=", "...", "!=...<=", "\n"
         ])
 
