@@ -9,7 +9,7 @@ tokex exposes two API functions: compile and match.
 
 tokex.**compile(**_input\_grammar,_ _allow\_sub\_grammar\_definitions=True_, _tokenizer=tokex.tokenizers.TokexTokenizer,_ _default\_flags=tokex.flags.DEFAULTS,_ _debug=True_**)**
 
-> Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.
+> Compile a tokex grammar into a Tokex object, which can be used for matching using its **match()** method.  If you intend to call match several times using the same input grammar, using a precompiled Tokex object can be slightly more performant, as the tokex grammar won't have to be parsed each time
 >
 > If *allow\_sub\_grammar\_definitions* is set to True it will enable [Sub Grammars](#sub-grammars) within the given grammar. Note that tokex is susceptible to the [billion laughs](https://en.wikipedia.org/wiki/Billion_laughs) attack when compiling untrusted 3rd party grammars with this feature enabled.  If compilation of 3rd party grammars is ever required, sub grammar support should be turned off to mitigate this type of attack.
 > 
