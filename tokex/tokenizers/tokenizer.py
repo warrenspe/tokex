@@ -1,6 +1,6 @@
 import re
 
-class TokexTokenizer:
+class TokexTokenizer(object):
     """
     Base class for Tokex tokenizers.  Uses re.findall & a collection of regular expressions to break up an
     input string into a sequence of tokens.

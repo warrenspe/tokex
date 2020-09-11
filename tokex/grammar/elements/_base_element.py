@@ -88,12 +88,12 @@ class BaseElement(object):
         """
 
         if idx < len(string_tokens):
-            logging.debug("Current Token: %s\n\nMATCHING: %s\n" % (self, string_tokens[idx]))
+            logging.debug("%s testing match for: %s\n" % (self, string_tokens[idx]))
 
         match, idx, output = self._apply(string_tokens, idx)
 
         if idx is not None and idx < len(string_tokens):
-            logging.debug("Matched: %s\n" % match)
+            logging.debug("%s Matched: %s\n" % (self, match))
 
         return match, idx, output
 
