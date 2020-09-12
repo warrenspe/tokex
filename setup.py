@@ -5,7 +5,7 @@ with open("README.md") as fd:
 
 setup(
     name='tokex',
-    version='2.0.1',
+    version='2.0.2',
     description="String tokenizing and parsing library",
     long_description=long_description,
     long_description_content_type="text/markdown",
