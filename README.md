@@ -217,6 +217,9 @@ Below is a description of each type of grammar element that can be used to const
 - Some flags are set by default; these can be overridden by passing a custom set of default flags to match/compile:
   - Case Insensitive **i**
 
+##### Backtracking
+It is very important to note that unlike `re`, tokex does not attempt to do any backtracking while it matches a user string.  In other words, grammar elements are always greedy, if they can continue to match characters in the input string, they will.  This design decision was made primarily for performance reasons.  Tokex grammars are often both longer than a typical `re` regex, and include more nested iterable sections.  See https://en.m.wikipedia.org/wiki/ReDoS#Exponential_backtracking for more information regarding this.
+
 ### String Literal
 Matches an input token exactly.
 
