@@ -227,14 +227,14 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         )
 
     def test_parse_error(self):
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "a")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "()")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, ",")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<>")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "[]")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "(asdf asdf : 'a')")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "'a\"")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, r"'a\'")
+        self.assertRaises(errors.TokexError, construct_grammar, "a")
+        self.assertRaises(errors.TokexError, construct_grammar, "()")
+        self.assertRaises(errors.TokexError, construct_grammar, ",")
+        self.assertRaises(errors.TokexError, construct_grammar, "<>")
+        self.assertRaises(errors.TokexError, construct_grammar, "[]")
+        self.assertRaises(errors.TokexError, construct_grammar, "(asdf asdf : 'a')")
+        self.assertRaises(errors.TokexError, construct_grammar, "'a\"")
+        self.assertRaises(errors.TokexError, construct_grammar, r"'a\'")
 
     def test_parse_named_element(self):
         test_grammar = construct_grammar(r"""
@@ -274,13 +274,13 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertIsInstance(test_grammar.sub_elements[4].sub_elements[0], elements.Newline)
         self.assertIsNone(test_grammar.sub_elements[4].sub_elements[0]._grammar_flags)
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<mno: 'a' 'b'>")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<mno: {'a' 'b'}>")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<mno: 'a'")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "mno: 'a'>")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, '<"mno": "a">')
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<'mno': 'a'>")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "<a: <b: 'a'>>")
+        self.assertRaises(errors.TokexError, construct_grammar, "<mno: 'a' 'b'>")
+        self.assertRaises(errors.TokexError, construct_grammar, "<mno: {'a' 'b'}>")
+        self.assertRaises(errors.TokexError, construct_grammar, "<mno: 'a'")
+        self.assertRaises(errors.TokexError, construct_grammar, "mno: 'a'>")
+        self.assertRaises(errors.TokexError, construct_grammar, '<"mno": "a">')
+        self.assertRaises(errors.TokexError, construct_grammar, "<'mno': 'a'>")
+        self.assertRaises(errors.TokexError, construct_grammar, "<a: <b: 'a'>>")
 
 
     def test_parse_grammar(self):
@@ -336,12 +336,12 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertEqual(test_grammar.sub_elements[5].sub_elements[2].token_str, 'c')
         self.assertEqual(test_grammar.sub_elements[5].sub_elements[2]._grammar_flags, {flags.QUOTED})
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "(mno: 'a'")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "(m no: 'a')")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "mno: 'a')")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, '("mno": "a")')
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "('mno': 'a')")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "('mno': 'a' ['b'])")
+        self.assertRaises(errors.TokexError, construct_grammar, "(mno: 'a'")
+        self.assertRaises(errors.TokexError, construct_grammar, "(m no: 'a')")
+        self.assertRaises(errors.TokexError, construct_grammar, "mno: 'a')")
+        self.assertRaises(errors.TokexError, construct_grammar, '("mno": "a")')
+        self.assertRaises(errors.TokexError, construct_grammar, "('mno': 'a')")
+        self.assertRaises(errors.TokexError, construct_grammar, "('mno': 'a' ['b'])")
 
 
     def test_parse_zero_or_one(self):
@@ -407,12 +407,12 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
 
         self.assertEqual(len(se[4].sub_elements), 0)
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "?(a:")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, ")")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "?(a:))")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "?(a:{)}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "? (a: 'a' )")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "?(a: 'a' sep { 'b'})")
+        self.assertRaises(errors.TokexError, construct_grammar, "?(a:")
+        self.assertRaises(errors.TokexError, construct_grammar, ")")
+        self.assertRaises(errors.TokexError, construct_grammar, "?(a:))")
+        self.assertRaises(errors.TokexError, construct_grammar, "?(a:{)}")
+        self.assertRaises(errors.TokexError, construct_grammar, "? (a: 'a' )")
+        self.assertRaises(errors.TokexError, construct_grammar, "?(a: 'a' sep { 'b'})")
 
 
     def test_parse_zero_or_more(self):
@@ -472,13 +472,13 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertEqual(se[2].delimiter_grammar.sub_elements[0].token_str, 'a')
         self.assertEqual(se[2].delimiter_grammar.sub_elements[0]._grammar_flags, {flags.NOT})
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "*(a:")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, ")")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "*(a:))")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "*(a:{)}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "* (a: 'a' )")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "*(a: 'a' sep)")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "*(a: 'a' sep {)")
+        self.assertRaises(errors.TokexError, construct_grammar, "*(a:")
+        self.assertRaises(errors.TokexError, construct_grammar, ")")
+        self.assertRaises(errors.TokexError, construct_grammar, "*(a:))")
+        self.assertRaises(errors.TokexError, construct_grammar, "*(a:{)}")
+        self.assertRaises(errors.TokexError, construct_grammar, "* (a: 'a' )")
+        self.assertRaises(errors.TokexError, construct_grammar, "*(a: 'a' sep)")
+        self.assertRaises(errors.TokexError, construct_grammar, "*(a: 'a' sep {)")
 
 
     def test_parse_one_or_more(self):
@@ -538,13 +538,13 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertEqual(se[2].delimiter_grammar.sub_elements[0].token_str, 'a')
         self.assertEqual(se[2].delimiter_grammar.sub_elements[0]._grammar_flags, {flags.NOT})
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+(a:")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, ")")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+(a:))")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+(a:{)}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+ (a: 'a' )")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+(a: 'a' sep)")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "+(a: 'a' sep {)")
+        self.assertRaises(errors.TokexError, construct_grammar, "+(a:")
+        self.assertRaises(errors.TokexError, construct_grammar, ")")
+        self.assertRaises(errors.TokexError, construct_grammar, "+(a:))")
+        self.assertRaises(errors.TokexError, construct_grammar, "+(a:{)}")
+        self.assertRaises(errors.TokexError, construct_grammar, "+ (a: 'a' )")
+        self.assertRaises(errors.TokexError, construct_grammar, "+(a: 'a' sep)")
+        self.assertRaises(errors.TokexError, construct_grammar, "+(a: 'a' sep {)")
 
 
     def test_parse_one_of_set(self):
@@ -595,11 +595,11 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         self.assertIsInstance(se[2].sub_elements[0].sub_elements[1], elements.AnyString)
         self.assertIsNone(se[2].sub_elements[0].sub_elements[1]._grammar_flags)
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "{a:.}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "{a:")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "{)}")
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "{'a' sep { 'b'}}")
+        self.assertRaises(errors.TokexError, construct_grammar, "{a:.}")
+        self.assertRaises(errors.TokexError, construct_grammar, "{a:")
+        self.assertRaises(errors.TokexError, construct_grammar, "}")
+        self.assertRaises(errors.TokexError, construct_grammar, "{)}")
+        self.assertRaises(errors.TokexError, construct_grammar, "{'a' sep { 'b'}}")
 
 
     def test_parse_sub_grammar_definitions(self):
@@ -666,11 +666,11 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
             'o', 'p', 'q', 'r',
         ])
 
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gramA{'a'}", allow_sub_grammar_definitions=False)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gram A{'a'}", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gram{A{'a'}", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "defgramA{'a'}", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gramA{ def gramB{ def gramC{ . } } } gramC()", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def grammer", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gramA{ def gramB { 'b' } } gramB()", allow_sub_grammar_definitions=True)
-        self.assertRaises(errors.GrammarParsingError, construct_grammar, "def gramA{ def gramB{ '' } } gramC()", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gramA{'a'}", allow_sub_grammar_definitions=False)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gram A{'a'}", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gram{A{'a'}", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "defgramA{'a'}", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gramA{ def gramB{ def gramC{ . } } } gramC()", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def grammer", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gramA{ def gramB { 'b' } } gramB()", allow_sub_grammar_definitions=True)
+        self.assertRaises(errors.TokexError, construct_grammar, "def gramA{ def gramB{ '' } } gramC()", allow_sub_grammar_definitions=True)

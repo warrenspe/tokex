@@ -1,6 +1,7 @@
 import re
 
 from ...logger import LOGGER
+from ... import errors
 from .. import flags
 
 class BaseElement(object):
@@ -9,7 +10,8 @@ class BaseElement(object):
     # A set of flags which are valid to be set for this element
     valid_flags = None
 
-    def __init__(self, token_str="", _flags=None, default_flags=flags.DEFAULTS):
+    def __init__(self, token_str="", _flags=None, default_flags=flags.DEFAULTS, token_dict=None):
+        self.token_dict = token_dict
         self.token_str = token_str
         # Records what flags were defined on the grammar
         self._grammar_flags = _flags
@@ -22,7 +24,7 @@ class BaseElement(object):
         if self._flags:
             for m_ex_set in flags.__MUTUALLY_EXCLUSIVE__:
                 if len(m_ex_set.difference(self._flags)) < len(m_ex_set) - 1:
-                    raise Exception("Mutually exclusive flags given: %s" % ", ".join(m_ex_set))
+                    raise errors.MutuallyExclusiveGrammarTokenFlagsError(self, m_ex_set)
 
         # Set default flags
         if self.valid_flags and default_flags:

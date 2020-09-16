@@ -48,6 +48,6 @@ def main():
 if __name__ == '__main__':
     # Ensure we're running from the project root
     os.chdir(PROJECT_ROOT)
-    sys.path.append(".")
+    sys.path.insert(1, ".")
 
     main()
