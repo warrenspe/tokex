@@ -115,13 +115,13 @@ class TestGrammarConstruction(_test_case.TokexTestCase):
         grammar_tokens = ["%s|%s" % ("".join(sorted(t["flags"] or [])), t["token"]) for t in tokenize_grammar(flags_grammar_string)]
 
         self.assertEqual(grammar_tokens, [
-            "!|'abc'", '!|" abc"', '!|"abc " def"',
+            "!|'abc'", '!|" abc"', '!|"abc \\" def"',
             "u|.", "q|.", "|.",
             "s|~AnotherRegex~", "s|~AnotherRegex ~", "s|~ AnotherRegex~", "s|~ AnotherRegex ~",
-            '|"string"', '|" string "', '|"str ing"', '|"str\'ing"', '|"str"ing"', '|"str"ing\\"', '|""',
-            "|'string'", "|' string '", "|'str ing'", "|'str\"ing'", "|'str'ing'", "|''",
-            "s|\"string\"", "s|\" string \"", "s|\"str ing\"", "s|\"str'ing\"", 's|\"str"ing\"', "s|\"str`ing\"", "s|\"\"",
-            "i|\"string\"", "i|\" string \"", "i|\"str ing\"", "i|\"str'ing\"", 'i|\"str"ing\"', "i|\"str`ing\"", "i|\"\"",
+            '|"string"', '|" string "', '|"str ing"', '|"str\'ing"', '|"str\\"ing"', '|"str\\"ing\\\\"', '|""',
+            "|'string'", "|' string '", "|'str ing'", "|'str\"ing'", "|'str\\'ing'", "|''",
+            "s|\"string\"", "s|\" string \"", "s|\"str ing\"", "s|\"str'ing\"", 's|\"str\\"ing\"', "s|\"str\\`ing\"", "s|\"\"",
+            "i|\"string\"", "i|\" string \"", "i|\"str ing\"", "i|\"str'ing\"", 'i|\"str\\"ing\"', "i|\"str\\`ing\"", "i|\"\"",
         ])
 
     def test_parse_token(self):

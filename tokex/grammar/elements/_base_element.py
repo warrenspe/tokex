@@ -7,6 +7,9 @@ from .. import flags
 class BaseElement(object):
     """ Base class which all defined grammar element subclass from """
 
+    # A regular expression which is used to find escaped characters within certain grammar elements
+    _escape_re = re.compile(r"\\(.)")
+
     # A set of flags which are valid to be set for this element
     valid_flags = None
 

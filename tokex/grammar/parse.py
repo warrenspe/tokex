@@ -62,7 +62,6 @@ def tokenize_grammar(grammar_string):
 
     matched_tokens = []
     all_flags_re = re.compile("[%s]+" % "".join((getattr(flags, flag) for flag in flags.__all__)))
-    escape_re = re.compile(r"\\(.)")
 
     for match in re.finditer(pattern, grammar_string, re.I):
         if match.groupdict().get('_nontoken_'):
@@ -80,10 +79,6 @@ def tokenize_grammar(grammar_string):
             if token_flags:
                 token_flags = set(token_flags.group())
                 matched_token = matched_token[len(token_flags):]
-
-        # Handle escapes in the token
-        if matched_token[0] in elements.FIRST_CHAR_ESCAPES:
-            matched_token = matched_token[0] + escape_re.sub(r"\1", matched_token[1:-1]) + matched_token[-1]
 
         matched_tokens.append({
             "match": match,

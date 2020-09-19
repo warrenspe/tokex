@@ -82,6 +82,9 @@ class StringLiteral(BaseSingular):
             # Strip the ' / " away
             self.token_str = self.token_str[1:-1]
 
+            # Handle escapes
+            self.token_str = self._escape_re.sub(r"\1", self.token_str)
+
             if self.has_flag(flags.CASE_INSENSITIVE):
                 self.token_str = self.token_str.lower()
 
@@ -111,6 +114,9 @@ class RegexString(BaseSingular):
         if self.token_str:
             # Strip the ~ away
             self.token_str = self.token_str[1:-1]
+
+            # Handle escapes
+            self.token_str = self._escape_re.sub(r"\1", self.token_str)
 
             if self.has_flag(flags.CASE_INSENSITIVE):
                 self.token_str = self.token_str.lower()
