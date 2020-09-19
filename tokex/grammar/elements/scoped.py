@@ -67,11 +67,11 @@ class NamedElement(Grammar):
         """
 
         if self.sub_elements:
-            raise errors.GrammarParsingError("%r cannot contain more than one element, already contains: %r" %
+            raise errors.NamedElementContentsError("%r cannot contain more than one element, already contains: %r" %
                                              (self, self.sub_elements[0]))
 
         if not isinstance(sub_element, BaseSingular):
-            raise errors.GrammarParsingError("%r can only contain singular elements, not %r" % (self, sub_element))
+            raise errors.NamedElementContentsError("%r can only contain singular elements, not %r" % (self, sub_element))
 
         self.sub_elements.append(sub_element)
 
@@ -100,7 +100,7 @@ class IteratorDelimiter(Grammar):
         pass
 
     def human_readable_name(self):
-        return "Iterator delimiter sep { ... }"
+        return "Iterator Delimiter sep {...}"
 
     def _apply(self, string_tokens, idx):
         match, idx, output = super(IteratorDelimiter, self)._apply(string_tokens, idx)
@@ -115,7 +115,10 @@ class ZeroOrOne(Grammar):
     """ Element which can match a contained grammar zero or one times """
 
     def human_readable_name(self):
-        return "Zero or One ?(%s: ...)" % self.name
+        if self.name:
+            return "Zero or One ?(%s: ...)" % self.name
+
+        return "Zero or One ?(...)"
 
     def _apply(self, string_tokens, idx):
         # If the index we're considering is beyond the end of our tokens we have nothing to match on.  However, since

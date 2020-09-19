@@ -26,6 +26,12 @@ class BaseElement(object):
                 if len(m_ex_set.difference(self._flags)) < len(m_ex_set) - 1:
                     raise errors.MutuallyExclusiveGrammarTokenFlagsError(self, m_ex_set)
 
+        # Handle invalid flags
+        if self._flags:
+            invalid_flags = self._flags.difference(self.valid_flags or [])
+            if invalid_flags:
+                raise errors.InvalidGrammarTokenFlagsError(invalid_flags, self)
+
         # Set default flags
         if self.valid_flags and default_flags:
             for flag in default_flags:

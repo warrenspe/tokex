@@ -4,15 +4,7 @@ from .scoped import Grammar, NamedElement, IteratorDelimiter, ZeroOrOne, ZeroOrM
 from .sub_grammar import SubGrammarDefinition, SubGrammarUsage
 
 
-# Dictionary which maps the first character of a grammar token to a grammar element class for all elements which
-# can accept flags
-FIRST_CHAR_VALID_FLAGS = {
-    ".": AnyString,
-    "~": RegexString,
-    "'": StringLiteral,
-    '"': StringLiteral,
-}
-
+# Set which contains the first token of grammar elements which can have escapes within their contents
 FIRST_CHAR_ESCAPES = {
     '~',
     '"',

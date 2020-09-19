@@ -13,7 +13,7 @@ def tokenize_grammar(grammar_string):
     """ Function which accepts a grammar string and returns an iterable of tokens """
 
     # Function to create regex's for given flags
-    flags_re_string = lambda f: "[%s]*" % "".join(f)
+    flags_re_string = "[%s]*" % "".join((getattr(flags, flag) for flag in flags.__all__))
 
     name_re_str = elements.BaseScopedElement.name_re_str
 
@@ -33,15 +33,15 @@ def tokenize_grammar(grammar_string):
         # One of Set open
         r"\{",
         # All Regex
-        r"%s\." % flags_re_string(elements.AnyString.valid_flags),
+        r"%s\." % flags_re_string,
         # Regex
-        r"%s~(?:[^\\~]*(?:\\.)*)*~" % flags_re_string(elements.RegexString.valid_flags),
+        r"%s~(?:[^\\~]*(?:\\.)*)*~" % flags_re_string,
         # Literal String
         #r"%s'.*?(?<!\\)'" % flags_re_string(elements.StringLiteral.valid_flags),
-        r"%s'(?:[^\\']*(?:\\.)*)*'" % flags_re_string(elements.StringLiteral.valid_flags),
+        r"%s'(?:[^\\']*(?:\\.)*)*'" % flags_re_string,
         # Literal String
         #r'%s".*?(?<!\\)"' % flags_re_string(elements.StringLiteral.valid_flags),
-        r'%s"(?:[^\\"]*(?:\\.)*)*"' % flags_re_string(elements.StringLiteral.valid_flags),
+        r'%s"(?:[^\\"]*(?:\\.)*)*"' % flags_re_string,
         # Newline Token
         r"\$",
 
@@ -75,17 +75,11 @@ def tokenize_grammar(grammar_string):
 
         # Check for flags on the token
         token_flags = None
-        if matched_token[:3].lower() not in ("def", "sep") and matched_token[:-2] != "()":
+        if matched_token[:3].lower() not in ("def", "sep") and matched_token[-2:] != "()":
             token_flags = all_flags_re.match(matched_token)
             if token_flags:
                 token_flags = set(token_flags.group())
                 matched_token = matched_token[len(token_flags):]
-
-                # Ensure the flags set on the element are valid
-                element = elements.FIRST_CHAR_VALID_FLAGS[matched_token[0]]
-                invalid_flags = token_flags.difference(element.valid_flags)
-                if invalid_flags:
-                    raise errors.InvalidGrammarTokenFlagsError(invalid_flags, element, grammar_string, match.span())
 
         # Handle escapes in the token
         if matched_token[0] in elements.FIRST_CHAR_ESCAPES:
@@ -117,11 +111,11 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
 
     # The grammar stack; opening tokens add a new item to the stack, closing tokens pop one off
     # Pre-populated with an outer-most grammar that will be returned from this function
-    grammar_stack = [elements.Grammar(default_flags=default_flags)]
+    grammar_stack = [elements.Grammar()]
 
     # A stack of sub_grammars; used to handle nested sub_grammar definitions
     # We prepopulate it with an outer-most subgrammar to handle global sub-grammar definitions
-    sub_grammar_stack = [elements.SubGrammarDefinition(default_flags=default_flags)]
+    sub_grammar_stack = [elements.SubGrammarDefinition()]
 
     token_dict = None
 
@@ -189,8 +183,8 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
 
             # Closers
             elif token == "}":
-                if isinstance(grammar_stack[-1],
-                              (elements.SubGrammarDefinition, elements.IteratorDelimiter, elements.OneOfSet)):
+                if grammar_stack[-1].__class__ in \
+                              (elements.SubGrammarDefinition, elements.IteratorDelimiter, elements.OneOfSet):
                     if isinstance(grammar_stack[-1], elements.SubGrammarDefinition):
                         new_sub_grammar = sub_grammar_stack.pop()
                         sub_grammar_stack[-1].sub_grammars[new_sub_grammar.name] = new_sub_grammar
@@ -201,15 +195,18 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
                     raise errors.MismatchedBracketsError(token, grammar_stack[-1])
 
             elif token == ")":
-                if isinstance(grammar_stack[-1],
-                              (elements.ZeroOrMore, elements.ZeroOrOne, elements.OneOrMore, elements.Grammar)):
+                if len(grammar_stack) == 1:
+                    raise errors.ExtraClosingBracketsError(token)
+
+                if grammar_stack[-1].__class__ in \
+                              (elements.ZeroOrMore, elements.ZeroOrOne, elements.OneOrMore, elements.Grammar):
                     grammar_stack.pop()
 
                 else:
                     raise errors.MismatchedBracketsError(token, grammar_stack[-1])
 
             elif token == ">":
-                if isinstance(grammar_stack[-1], (elements.NamedElement)):
+                if grammar_stack[-1].__class__ in (elements.NamedElement, ):
                     grammar_stack.pop()
 
                 else:
@@ -239,7 +236,7 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
                     raise errors.SubGrammarsDisabledError(element.name)
 
                 # Only allow definition of a new subgrammar within the global scope and other subgrammars
-                for stack_element in grammar_stack[1:]:
+                for stack_element in reversed(grammar_stack[1:]):
                     if not isinstance(stack_element, elements.SubGrammarDefinition):
                         raise errors.SubGrammarScopeError(stack_element, element.name)
 
@@ -263,12 +260,9 @@ def construct_grammar(grammar_string, allow_sub_grammar_definitions=False, defau
                     raise errors.UndefinedSubGrammarError(sub_grammar_name)
 
             else:
-                raise errors.GrammarParsingError("Unknown token: %s" % repr(token))
-
-            if not grammar_stack:
-                raise errors.ExtraClosingBracketsError(token)
+                raise errors.GrammarParsingError("Unknown token: %r" % token)
 
         if len(grammar_stack) > 1:
-            raise errors.ExtraOpeningBracketsError(grammar_stack[-1].token_dict)
+            raise errors.ExtraOpeningBracketsError(grammar_stack[-1])
 
         return grammar_stack[0]

@@ -46,7 +46,7 @@ class AnyString(BaseSingular):
     }
 
     def human_readable_name(self):
-        return "Any String  ."
+        return "Any String ."
 
     def _apply(self, string_tokens, idx):
         if self._apply_first(string_tokens, idx) is not None:
@@ -78,11 +78,12 @@ class StringLiteral(BaseSingular):
     }
 
     def setup(self):
-        # Strip the '/" away
-        self.token_str = self.token_str[1:-1]
+        if self.token_str:
+            # Strip the ' / " away
+            self.token_str = self.token_str[1:-1]
 
-        if self.has_flag(flags.CASE_INSENSITIVE):
-            self.token_str = self.token_str.lower()
+            if self.has_flag(flags.CASE_INSENSITIVE):
+                self.token_str = self.token_str.lower()
 
     def human_readable_name(self):
         return "String Literal %s" % self.token_str
@@ -107,17 +108,18 @@ class RegexString(BaseSingular):
     }
 
     def setup(self):
-        # Strip the ~ away
-        self.token_str = self.token_str[1:-1]
+        if self.token_str:
+            # Strip the ~ away
+            self.token_str = self.token_str[1:-1]
 
-        if self.has_flag(flags.CASE_INSENSITIVE):
-            self.token_str = self.token_str.lower()
+            if self.has_flag(flags.CASE_INSENSITIVE):
+                self.token_str = self.token_str.lower()
 
-        try:
-            self.regex = re.compile(self.token_str)
+            try:
+                self.regex = re.compile(self.token_str)
 
-        except re.error:
-            raise errors.GrammarParsingError("Invalid Regular Expression given: %s" % self.token_str)
+            except re.error:
+                raise errors.InvalidRegexError(self.token_str)
 
     def human_readable_name(self):
         return "Regular Expression %s" % self.token_str

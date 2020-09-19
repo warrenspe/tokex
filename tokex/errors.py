@@ -16,7 +16,7 @@ class TokexError(Exception):
     def grammar_string_error_context(self):
         """ Returns a string showing context around where an error occurred """
 
-        if not all((self.grammar_string, self.match_span_start, self.match_span_end)):
+        if None in [self.grammar_string, self.match_span_start, self.match_span_end]:
             return ""
 
         # Create a grammar snippet showing the text around the error
@@ -34,16 +34,16 @@ class TokexError(Exception):
 
         # Get the line number/column number of the line in question
         line_num = self.grammar_string.count("\n", 0, self.match_span_start) + 1
-        col_num = self.match_span_start - grammar_snippet_start
+        col_num = self.match_span_start - grammar_snippet_start + 1
 
         # Create a string like "    ^^^" showing where in the line the error is
         justified_caret = "".join((
-            " " * col_num,
+            " " * (col_num - 1),
             "^" * (self.match_span_end - self.match_span_start)
         ))
 
         return textwrap.dedent("""
-            Line %s Column %s:
+            Line %s Column %s
             %s
             %s
         """).strip() % (
@@ -52,6 +52,9 @@ class TokexError(Exception):
             grammar_snippet,
             justified_caret
         )
+
+    def __str__(self):
+        return repr(self)
 
 
 ###
@@ -68,7 +71,8 @@ class GrammarTokenizingError(TokexError):
 
     def __repr__(self):
         return textwrap.dedent("""
-            Error encountered while tokenizing tokex grammar: %s
+            Error encountered while tokenizing tokex grammar:
+            %s
             %s
         """).strip() % (
             self.err_msg,
@@ -84,20 +88,6 @@ class UnknownGrammarTokenError(GrammarTokenizingError):
         super(UnknownGrammarTokenError, self).__init__(err_msg, *args)
 
 
-class InvalidGrammarTokenFlagsError(GrammarTokenizingError):
-    """ Error thrown when a grammar token in a user-defined grammar has an invalid flag """
-
-    def __init__(self, invalid_flags, element, *args):
-        add_s = "s" if len(invalid_flags) > 1 else ""
-        err_msg = "Invalid flag%s given to %r: %s.  Valid flags are: %s" % (
-            add_s,
-            element,
-            ", ".join(invalid_flags),
-            element.valid_flags
-        )
-        super(InvalidGrammarTokenFlagsError, self).__init__(err_msg, *args)
-
-
 ###
 # Grammar Parsing (Element Tree construction time) errors
 ###
@@ -111,7 +101,7 @@ class GrammarParsingError(TokexError):
         self.err_msg = err_msg
 
     def __repr__(self):
-        grammar_tree_at_error = utils.format_element_tree(self.grammar_stack)
+        grammar_tree_at_error = self.get_tree()
         tree_at_error_string = "%s Tree at the time of error:" % self.tree_type if grammar_tree_at_error else ""
 
         return "\n".join(filter(None, [
@@ -125,18 +115,43 @@ class GrammarParsingError(TokexError):
         self.grammar_string = grammar_string
         self.match_span_start, self.match_span_end = token_dict["match"].span()
         self.grammar_stack = grammar_stack
-        self.sub_grammar_stack = self.sub_grammar_stack
+        self.sub_grammar_stack = sub_grammar_stack
+
+    def get_tree(self):
+        return utils.format_element_tree(self.grammar_stack[0]) if self.grammar_stack else ""
+
+
+class InvalidGrammarTokenFlagsError(GrammarParsingError):
+    """ Error thrown when a grammar token in a user-defined grammar has an invalid flag """
+
+    def __init__(self, invalid_flags, element):
+        add_s = "s" if len(invalid_flags) > 1 else ""
+        err_msg = "Invalid flag%s %s given to %r, valid flags are: %s" % (
+            add_s,
+            ", ".join(sorted(invalid_flags)),
+            element,
+            ", ".join(sorted(element.valid_flags)) if element.valid_flags else None
+        )
+        super(InvalidGrammarTokenFlagsError, self).__init__(err_msg)
+
+
+class InvalidRegexError(GrammarParsingError):
+    """ Error thrown when an invalid regular expression is given to a RegexString element """
+
+    def __init__(self, regex):
+        err_msg = "Invalid regular expression given: %s" % regex
+        super(InvalidRegexError, self).__init__(err_msg)
 
 
 class MutuallyExclusiveGrammarTokenFlagsError(GrammarParsingError):
     """ Error thrown when a grammar token in a user-defined grammar is given mutually exclusive flags """
 
     def __init__(self, element, invalid_flags):
-        err_msg = "Mutually exclusive flags given to Invalid flag%s given to %r: %s" % (
+        err_msg = "Mutually exclusive flags given to %r: %s" % (
             element,
-            ", ".join(invalid_flags),
+            ", ".join(sorted(invalid_flags)),
         )
-        super(InvalidGrammarTokenFlagsError, self).__init__(err_msg)
+        super(MutuallyExclusiveGrammarTokenFlagsError, self).__init__(err_msg)
 
 
 class InvalidDelimiterError(GrammarParsingError):
@@ -166,9 +181,17 @@ class ExtraClosingBracketsError(GrammarParsingError):
 class ExtraOpeningBracketsError(GrammarParsingError):
     """ Error thrown when extra mismatched opening brackets are given that do not have associated closing brackets """
 
-    def __init__(self, token):
-        err_msg = "Extra opening brackets given; %s was not closed" % token
+    def __init__(self, element):
+        err_msg = "Extra opening brackets given; %r was not closed" % element
         super(ExtraOpeningBracketsError, self).__init__(err_msg)
+        self.match_span_start, self.match_span_end = element.token_dict["match"].span()
+
+    def inject_stack(self, grammar_string, token_dict, grammar_stack, sub_grammar_stack):
+        """ Override so that we use the token dict which opened the extra scope, rather than the last token dict of the grammar """
+
+        self.grammar_string = grammar_string
+        self.grammar_stack = grammar_stack
+        self.sub_grammar_stack = self.sub_grammar_stack
 
 
 class MismatchedBracketsError(GrammarParsingError):
@@ -181,6 +204,11 @@ class MismatchedBracketsError(GrammarParsingError):
         )
         super(MismatchedBracketsError, self).__init__(err_msg)
 
+
+class NamedElementContentsError(GrammarParsingError):
+    """ Error thrown when invalid contents are given to a Named Element """
+
+
 ###
 # Sub Grammar Errors
 ###
@@ -188,15 +216,17 @@ class MismatchedBracketsError(GrammarParsingError):
 class SubGrammarError(GrammarParsingError):
     """ Base class for sub grammar related errors raised while processing a tokex grammar """
 
-    def __init__(self, err_msg):
-        super(SubGrammarError, self).__init__(err_msg)
+    tree_type = "Sub Grammar"
+
+    def get_tree(self):
+        return utils.format_subgrammar_tree(self.sub_grammar_stack[0]) if self.sub_grammar_stack else ""
 
 
 class SubGrammarsDisabledError(SubGrammarError):
     """ Raised when a sub grammar is defined while allow_sub_grammar_definitions is False """
 
     def __init__(self, name):
-        err_msg = "Cannot define sub grammars %s while allow_sub_grammar_definitions is False" % name
+        err_msg = "Cannot define sub grammar %s while allow_sub_grammar_definitions is False" % name
         super(SubGrammarsDisabledError, self).__init__(err_msg)
 
 
@@ -205,8 +235,7 @@ class SubGrammarScopeError(SubGrammarError):
 
     def __init__(self, scope_element, name):
         err_msg = textwrap.dedent("""
-            Error defining sub grammar %s
-            Sub Grammars can only be defined globally or within other sub grammars, not inside a: %s
+            Error defining sub grammar %s. Sub Grammars can only be defined globally or within other sub grammars, not inside a: %s
         """).strip() % (name, scope_element)
         super(SubGrammarScopeError, self).__init__(err_msg)
 
